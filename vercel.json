@@ -1,4 +1,8 @@
 {
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "python3 -m unittest discover -s tests -p test_static_build.py && python3 scripts/build_static.py",
+  "outputDirectory": ".static-output",
   "cleanUrls": false,
   "trailingSlash": true,
   "headers": [
