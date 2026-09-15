@@ -1,4 +1,8 @@
 {
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "test -f index.html",
+  "outputDirectory": ".",
   "cleanUrls": false,
   "trailingSlash": true,
   "headers": [
