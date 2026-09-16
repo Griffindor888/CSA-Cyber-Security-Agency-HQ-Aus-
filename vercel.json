@@ -12,5 +12,11 @@
     {"source":"/favicon.svg","headers":[{"key":"Cache-Control","value":"public, max-age=0, s-maxage=31536000, immutable"}]},
     {"source":"/library/(.*)","headers":[{"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive"}]}
   ],
-  "redirects":[{"source":"/platforms","destination":"/technology/","permanent":true},{"source":"/platforms/","destination":"/technology/","permanent":true}]
+  "redirects":[
+    {"source":"/(.*)","has":[{"type":"host","value":"www.cs-agency.com.au"}],"destination":"https://cs-agency.com.au/$1","permanent":true},
+    {"source":"/(.*)","has":[{"type":"host","value":"csa-agency.com.au"}],"destination":"https://cs-agency.com.au/$1","permanent":true},
+    {"source":"/(.*)","has":[{"type":"host","value":"www.csa-agency.com.au"}],"destination":"https://cs-agency.com.au/$1","permanent":true},
+    {"source":"/platforms","destination":"/technology/","permanent":true},
+    {"source":"/platforms/","destination":"/technology/","permanent":true}
+  ]
 }
