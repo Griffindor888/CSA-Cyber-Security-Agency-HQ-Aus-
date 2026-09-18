@@ -24,6 +24,13 @@
   const menu = document.querySelector('.menu');
   const links = document.querySelector('.navlinks');
   if (menu && links) {
+    const quietLink = document.querySelector('.navright .quietlink');
+    if (quietLink && !links.querySelector('.mobileEngagement')) {
+      const mobileEngagement = quietLink.cloneNode(true);
+      mobileEngagement.classList.remove('quietlink');
+      mobileEngagement.classList.add('mobileEngagement');
+      links.appendChild(mobileEngagement);
+    }
   if (!links.id) links.id = 'primary-navigation';
   menu.setAttribute('type', 'button');
   menu.setAttribute('aria-controls', links.id);
