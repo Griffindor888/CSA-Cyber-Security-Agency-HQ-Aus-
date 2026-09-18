@@ -1,3 +1,7 @@
+.mobileEngagement {
+  display: none;
+}
+
 @media (max-width: 980px) {
   .navlinks.navlinks-open {
     display: flex;
@@ -16,6 +20,10 @@
 
   .navlinks.navlinks-open a {
     padding: 12px 0;
+  }
+
+  .navlinks.navlinks-open .mobileEngagement {
+    display: block;
   }
 
   .table {
