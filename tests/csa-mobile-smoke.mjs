@@ -125,6 +125,7 @@ try {
       assert.ok(overflow <= 1, `${slug} must fit ${width}px; overflow=${overflow}px`);
       await page.screenshot({ path: `artifacts/${slug}-${width}.png`, fullPage: true });
       await page.locator(`.product-close a[href="/start/?pathway=${pathway}#enquiry"]`).click();
+      await page.locator('.product-return a').waitFor();
       assert.equal(await page.locator('[name="pathway"]').inputValue(), pathway, 'enquiry must retain product context');
       await page.locator('.product-return a').click();
       assert.equal(new URL(page.url()).pathname, `/platforms/${slug}/`, 'visitor can return without browser Back');
