@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 const baseURL = process.env.CSA_TEST_BASE_URL || 'http://127.0.0.1:4173';
@@ -9,6 +9,13 @@ const browserErrors = [];
 
 page.on('pageerror', error => browserErrors.push(error.message));
 await mkdir('artifacts', { recursive: true });
+// Mirror the production policy while testing locally, so blocked enquiry requests cannot pass silently.
+const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+const policy = config.headers.find(rule => rule.source === '/(.*)').headers.find(header => header.key === 'Content-Security-Policy').value;
+await page.route(`${baseURL}/**`, async route => {
+  const response = await route.fetch();
+  await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': policy } });
+});
 
 try {
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
@@ -18,7 +25,9 @@ try {
   await page.locator('.menu').click();
   assert.equal(await page.locator('.menu').getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('.navlinks').isVisible(), true, 'opened navigation must be visible');
-  assert.equal(await page.locator('.navlinks a').count(), 7, 'all primary navigation links must remain available');
+  assert.deepEqual(await page.locator('.navlinks a').evaluateAll(links => links.map(link => link.getAttribute('href'))),
+    ['/company/', '/ecosystem/', '/technology/', '/governance/', '/industries/', '/trust/', '/research/', '/engagement/'],
+    'mobile navigation must include every primary destination and corporate engagement');
   await page.screenshot({ path: 'artifacts/csa-home-mobile-menu.png', fullPage: true });
 
   await page.keyboard.press('Escape');
@@ -41,6 +50,9 @@ try {
   let intakeRequests = 0;
   await page.route('**/rest/v1/rpc/submit_csa_commercial_enquiry', async route => {
     intakeRequests += 1;
+    const headers = route.request().headers();
+    assert.ok(headers.apikey?.startsWith('sb_publishable_'), 'enquiry uses the public API-key header');
+    assert.equal(headers.authorization, undefined, 'a publishable key is not a bearer token');
     if (intakeRequests === 1) {
       await route.fulfill({
         status: 200,
@@ -98,6 +110,26 @@ try {
     assert.equal(await page.locator('main').count(), 1, `${route} must contain one main landmark`);
     const routeOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(routeOverflow <= 1, `${route} must not overflow at 390px; overflow=${routeOverflow}px`);
+  }
+
+  const products = [
+    ['wardale', 'wardale'], ['solurius', 'solurius'], ['autto-connect', 'autto'], ['csia', 'csia'],
+  ];
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [slug, pathway] of products) {
+      await page.goto(`${baseURL}/platforms/${slug}/`, { waitUntil: 'networkidle' });
+      assert.equal(await page.locator('.group-navigation a').count(), 5, 'each product must connect the group');
+      assert.equal(await page.locator('.product-peers .product-peer').count(), 3, 'each product must explain all sibling products');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(overflow <= 1, `${slug} must fit ${width}px; overflow=${overflow}px`);
+      await page.screenshot({ path: `artifacts/${slug}-${width}.png`, fullPage: true });
+      await page.locator(`.product-close a[href="/start/?pathway=${pathway}#enquiry"]`).click();
+      await page.locator('.product-return a').waitFor();
+      assert.equal(await page.locator('[name="pathway"]').inputValue(), pathway, 'enquiry must retain product context');
+      await page.locator('.product-return a').click();
+      assert.equal(new URL(page.url()).pathname, `/platforms/${slug}/`, 'visitor can return without browser Back');
+    }
   }
 
   assert.deepEqual(browserErrors, [], `browser errors: ${browserErrors.join('; ')}`);

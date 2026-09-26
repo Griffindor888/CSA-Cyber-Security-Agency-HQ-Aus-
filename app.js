@@ -83,6 +83,19 @@
   if (!enquiryForm) return;
 
   const pathwaySelect = enquiryForm.querySelector('[name="pathway"]');
+  const productPaths = { wardale: ['WARDALE OS', '/platforms/wardale/'], solurius: ['Solurius', '/platforms/solurius/'], autto: ['AUTTO Connect', '/platforms/autto-connect/'], csia: ['CS Insurance', '/platforms/csia/'] };
+  const requestedPathway = new URLSearchParams(window.location.search).get('pathway');
+  if (requestedPathway && Object.prototype.hasOwnProperty.call(productPaths, requestedPathway)) {
+    pathwaySelect.value = requestedPathway;
+    const [productName, productPath] = productPaths[requestedPathway];
+    const returnLine = document.createElement('p');
+    returnLine.className = 'product-return';
+    const returnLink = document.createElement('a');
+    returnLink.href = productPath;
+    returnLink.textContent = `Return to ${productName}`;
+    returnLine.appendChild(returnLink);
+    enquiryForm.prepend(returnLine);
+  }
   const submitButton = enquiryForm.querySelector('[type="submit"]');
   const formStatus = enquiryForm.querySelector('[data-form-status]');
   const fallback = enquiryForm.querySelector('[data-email-fallback]');
@@ -126,7 +139,6 @@
         method: 'POST',
         headers: {
           apikey: publishableKey,
-          Authorization: `Bearer ${publishableKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
