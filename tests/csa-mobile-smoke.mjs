@@ -120,7 +120,7 @@ try {
     for (const [slug, pathway] of products) {
       await page.goto(`${baseURL}/platforms/${slug}/`, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.group-navigation a').count(), 5, 'each product must connect the group');
-      assert.equal(await page.locator('.product-peer').count(), 3, 'each product must explain all sibling products');
+      assert.equal(await page.locator('.product-peers .product-peer').count(), 3, 'each product must explain all sibling products');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.ok(overflow <= 1, `${slug} must fit ${width}px; overflow=${overflow}px`);
       await page.screenshot({ path: `artifacts/${slug}-${width}.png`, fullPage: true });
