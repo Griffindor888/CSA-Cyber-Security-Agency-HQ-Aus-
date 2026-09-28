@@ -21,12 +21,12 @@ try {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       assert.ok(overflow <= 1, `journey toolbar must fit ${width}px`);
       await toolbar.getByRole('link', {name:'Go to bottom of page', exact:true}).click();
-      await page.waitForTimeout(600);
+      await page.waitForFunction(() => document.documentElement.scrollHeight - innerHeight - scrollY < 4, null, {timeout:5000});
       const distance = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight - scrollY);
       assert.ok(distance < 4, 'Bottom must reach the end without hiding content');
       await page.screenshot({path:`artifacts/csa-journey-${width}-js-${javaScriptEnabled}.png`});
       await toolbar.getByRole('link', {name:'Go to top of page', exact:true}).click();
-      await page.waitForTimeout(600);
+      await page.waitForFunction(() => scrollY < 4, null, {timeout:5000});
       assert.ok(await page.evaluate(() => scrollY < 4), 'Top returns to the beginning');
       await toolbar.locator('summary').click();
       await toolbar.locator('.journey-page-list a[href="/start/"]').click();
