@@ -31,7 +31,8 @@ try {
         return route.fulfill({ status:404, contentType:'text/html', headers:{'content-security-policy':policy}, body:missingHTML });
       }
       const response = await route.fetch();
-      await route.fulfill({ response, headers:{...response.headers(), 'content-security-policy':policy} });
+      const body = await response.body();
+      await route.fulfill({ status:response.status(), headers:{...response.headers(), 'content-security-policy':policy}, body });
     });
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height:900 });
@@ -94,7 +95,7 @@ try {
       await page.locator('main a[href="/"]').click();
       assert.equal(new URL(page.url()).pathname, '/');
       assert.equal(await page.locator('.nav:visible').count(), 1, 'home keeps one corporate header');
-      assert.equal(await page.locator('.group-bar:visible').count(), 0);
+      assert.equal(await page.locator('.group-bar:visible').count(), 1, 'home restores the standard product group navigation');
       results.push({width, javaScriptEnabled, status:'passed', localErrorRoutingFixture:local});
     }
     assert.deepEqual(errors, [], 'no browser exceptions');

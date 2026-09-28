@@ -14,7 +14,8 @@ const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.u
 const policy = config.headers.find(rule => rule.source === '/(.*)').headers.find(header => header.key === 'Content-Security-Policy').value;
 await page.route(`${baseURL}/**`, async route => {
   const response = await route.fetch();
-  await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': policy } });
+  const body = await response.body();
+  await route.fulfill({ status: response.status(), headers: { ...response.headers(), 'content-security-policy': policy }, body });
 });
 
 try {
