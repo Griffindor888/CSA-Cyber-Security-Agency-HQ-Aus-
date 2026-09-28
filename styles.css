@@ -112,3 +112,31 @@ h3{font-size:26px;line-height:1.12;letter-spacing:-.025em;margin:0 0 12px}
 @media(max-width:1000px){.product-heading{grid-template-columns:1fr;gap:36px}.product-context{max-width:760px}.product-context h2{max-width:600px}.product-process{gap:36px}.group-navigation{gap:4px 22px}}
 @media(max-width:640px){.group-navigation .group-home{flex-basis:100%}.group-navigation{gap:2px 18px;font-size:14px}.group-home span{font-size:13px}.product-hero{padding-bottom:50px}.product-breadcrumb{margin-bottom:32px}.product-heading h1{font-size:42px}.product-intro{font-size:18px}.product-peers,.product-process,.product-reading{grid-template-columns:1fr;gap:24px}.product-peer{padding:22px}.product-capabilities .card{min-height:auto}.product-context{padding:24px}.product-journey{margin-top:12px}.product-close .actionRow{align-items:stretch}.product-close .button{width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.card{transition:none}}
+
+/* One corporate header. The main menu and ecosystem pages carry product navigation. */
+.group-bar { display: none; }
+@media (max-width: 760px) {
+  .wrap { min-width: 0; }
+  .navin { gap: 12px; }
+  .brand { min-width: 0; }
+  .brandmark { flex: none; }
+  .brandname { font-size: clamp(13px, 3.7vw, 17px); line-height: 1.2; overflow-wrap: anywhere; }
+  .menu { min-height: 44px; min-width: 60px; }
+  .hero, .pageHero { padding-top: 48px; padding-bottom: 48px; }
+  h1, .pageHero h1, .product-heading h1 { font-size: clamp(34px, 9vw, 50px); line-height: 1.06; overflow-wrap: anywhere; }
+  h2, h3, p, .lead, .notice { overflow-wrap: anywhere; }
+  .section.dark *, .libraryGate > *, .card, .choice, .product-heading > * { min-width: 0; }
+  .libraryGate { padding: 24px; gap: 24px; }
+  .libraryGate .seal { width: 100%; min-height: 120px; height: auto; padding: 18px; font-size: clamp(13px, 3.8vw, 18px); text-align: center; overflow-wrap: anywhere; }
+  .pageHero p, .hero p { font-size: clamp(17px, 4.5vw, 21px); line-height: 1.5; }
+  .actionRow .button { max-width: 100%; text-align: center; }
+  .footTop { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .footTop a, .footBrand p, .legal { font-size: 15px; line-height: 1.55; }
+  .footTop h4 { font-size: 14px; }
+  .footer { padding: 40px 0; }
+}
+@media (max-width: 390px) {
+  .brandname { font-size: 13px; }
+  .footTop { grid-template-columns: 1fr; }
+  .footBrand { grid-column: 1; }
+}
