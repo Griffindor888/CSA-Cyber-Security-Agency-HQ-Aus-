@@ -48,6 +48,17 @@ try {
       await toolbar.getByRole('link',{name:'Back to Our products',exact:true}).click();
       await page.waitForURL(`${base}/technology/`);
     }
+    // Model a 400%-zoom visual viewport: the open picker must remain above the sticky header.
+    await page.setViewportSize({width:320,height:256});
+    await page.goto(`${base}/`);
+    await page.locator('.journey-pages summary').click();
+    const firstLink = page.locator('.journey-page-list a').first();
+    assert.equal(await firstLink.evaluate(element => {
+      const r = element.getBoundingClientRect();
+      return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('a') === element;
+    }), true, 'short viewport must leave the first page-picker row clickable');
+    await page.locator('.journey-page-list a[href="/start/"]').click();
+    await page.waitForURL(`${base}/start/`);
     await context.close();
   }
   const context = await browser.newContext();

@@ -144,7 +144,7 @@ h3{font-size:26px;line-height:1.12;letter-spacing:-.025em;margin:0 0 12px}
 /* A continuous route through the site, reachable at every scroll position. */
 .has-journey-tools { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
 html { scroll-padding-top: 96px; scroll-padding-bottom: 100px; }
-.journey-tools { position: fixed; z-index: 45; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); width: min(420px,calc(100% - 24px)); padding: 6px; border: 1px solid #c8d0da; border-radius: 18px; background: #fff; color: #14202f; box-shadow: 0 8px 30px #10274e26; }
+.journey-tools { position: fixed; z-index: 60; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); width: min(420px,calc(100% - 24px)); padding: 6px; border: 1px solid #c8d0da; border-radius: 18px; background: #fff; color: #14202f; box-shadow: 0 8px 30px #10274e26; }
 .journey-tools > a, .journey-pages > summary { min-width: 0; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 700; line-height: 1.25; border-radius: 12px; cursor: pointer; }
 .journey-tools > a > span:first-child, .journey-pages > summary > span:first-child { font-size: 20px; line-height: 1; }
 .journey-tools > a:hover, .journey-pages > summary:hover, .journey-pages[open] > summary { background: var(--blue-pale); color: var(--blue-deep); }
