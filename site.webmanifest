@@ -9,6 +9,17 @@
   "lang": "en-AU",
   "description": "Australian-founded technology institution with an operating presence in Australia and the United States, developing governed AI, human assurance, intelligent operations and cyber-risk infrastructure for global markets.",
   "icons": [
-    {"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

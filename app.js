@@ -82,6 +82,19 @@
   menu.hidden = false;
   }
 
+  const pagePicker = document.querySelector('.journey-pages');
+  if (pagePicker) {
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && pagePicker.open) {
+        pagePicker.open = false;
+        pagePicker.querySelector('summary').focus();
+      }
+    });
+    document.addEventListener('click', event => {
+      if (pagePicker.open && !pagePicker.contains(event.target)) pagePicker.open = false;
+    });
+  }
+
   const enquiryForm = document.querySelector('#csa-commercial-enquiry');
   if (!enquiryForm) return;
 
