@@ -2,6 +2,11 @@
   display: none;
 }
 
+/* A scripted control stays hidden until its event handlers are installed. */
+.menu[hidden] {
+  display: none;
+}
+
 @media (max-width: 980px) {
   .navlinks.navlinks-open {
     display: flex;

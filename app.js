@@ -77,6 +77,9 @@
   window.addEventListener('resize', () => {
     if (!isMobile()) closeMenu();
   });
+  // Pages may opt into progressive enhancement with a hidden menu button.
+  // Reveal it only after the complete interaction has been initialized.
+  menu.hidden = false;
   }
 
   const enquiryForm = document.querySelector('#csa-commercial-enquiry');
