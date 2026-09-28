@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
-import { chromium } from 'playwright';
+import { chromium, request } from 'playwright';
 
 const baseURL = process.env.CSA_TEST_BASE_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch();
+const fetcher = await request.newContext();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const browserErrors = [];
 
@@ -13,8 +14,15 @@ await mkdir('artifacts', { recursive: true });
 const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
 const policy = config.headers.find(rule => rule.source === '/(.*)').headers.find(header => header.key === 'Content-Security-Policy').value;
 await page.route(`${baseURL}/**`, async route => {
-  const response = await route.fetch();
-  await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': policy } });
+  const request = route.request();
+  const response = await fetcher.fetch(request.url(), {
+    method: request.method(),
+    headers: request.headers(),
+    data: request.postDataBuffer() ?? undefined,
+    failOnStatusCode: false,
+  });
+  const body = await response.body();
+  await route.fulfill({ status: response.status(), headers: { ...response.headers(), 'content-security-policy': policy }, body });
 });
 
 try {
@@ -134,5 +142,7 @@ try {
 
   assert.deepEqual(browserErrors, [], `browser errors: ${browserErrors.join('; ')}`);
 } finally {
+  await page.unrouteAll({ behavior:'ignoreErrors' });
+  await fetcher.dispose();
   await browser.close();
 }
