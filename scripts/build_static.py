@@ -4,7 +4,7 @@ import shutil
 
 PUBLIC_FILES = (
     'index.html', '404.html', 'a11y.css', 'app.js', 'ecosystem-globe.css',
-    'favicon.svg', 'llms.txt', 'mobile-nav.css', 'robots.txt', 'site.webmanifest',
+    'favicon.svg', 'apple-touch-icon.png', 'llms.txt', 'mobile-nav.css', 'robots.txt', 'site.webmanifest',
     'sitemap.xml', 'social-card.svg', 'styles.css', '.well-known/security.txt',
     'accessibility/index.html', 'company/index.html', 'contact/index.html',
     'ecosystem/index.html', 'engagement/index.html', 'governance/index.html',

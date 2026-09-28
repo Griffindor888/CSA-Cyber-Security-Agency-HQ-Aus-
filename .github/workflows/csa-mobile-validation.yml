@@ -6,8 +6,12 @@ on:
       - '**/*.html'
       - '*.css'
       - '*.js'
+      - 'favicon.svg'
+      - 'apple-touch-icon.png'
+      - 'site.webmanifest'
       - 'tests/csa-mobile-smoke.mjs'
       - 'tests/csa-404-navigation.mjs'
+      - 'tests/csa-journey-navigation.mjs'
       - 'tests/csa-commercial-intake-db-acceptance.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/csa-mobile-validation.yml'
@@ -65,6 +69,8 @@ jobs:
         run: node tests/csa-404-navigation.mjs
       - name: Verify 390px customer path
         run: node tests/csa-mobile-smoke.mjs
+      - name: Verify continuous page journey
+        run: node tests/csa-journey-navigation.mjs
       - name: Preserve acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
