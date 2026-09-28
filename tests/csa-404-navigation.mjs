@@ -54,6 +54,26 @@ try {
         const destination = await context.request.get(`${baseURL}${href}`);
         assert.equal(destination.status(), 200, `${href} must resolve`);
       }
+      const fallback = page.locator('nav[aria-label="Primary navigation without JavaScript"]');
+      if (javaScriptEnabled) {
+        assert.equal(await fallback.count(), 0, 'scripted pages must not render duplicate fallback navigation');
+      } else {
+        assert.equal(await fallback.isVisible(), true, 'no-script primary navigation must be visible, not merely in the DOM');
+        assert.deepEqual(await fallback.locator('a').evaluateAll(links => links.map(a => a.getAttribute('href'))), [...expectedNavigation, '/engagement/']);
+        for (const href of [...expectedNavigation, '/engagement/']) {
+          const link = fallback.locator(`a[href="${href}"]`);
+          assert.equal(await link.isVisible(), true, `${href} needs a visible no-script fallback`);
+          const destination = await context.request.get(`${baseURL}${href}`);
+          assert.equal(destination.status(), 200, `${href} must resolve without JavaScript`);
+        }
+        const ecosystem = fallback.locator('a[href="/ecosystem/"]');
+        await ecosystem.focus();
+        assert.equal(await ecosystem.evaluate(element => element === document.activeElement), true);
+        await Promise.all([page.waitForURL(`${baseURL}/ecosystem/`), ecosystem.press('Enter')]);
+        assert.equal(new URL(page.url()).pathname, '/ecosystem/', 'keyboard activation must leave the 404 without JavaScript');
+        const returned = await page.goto(`${baseURL}${missingPath}`, {waitUntil:'networkidle'});
+        assert.equal(returned.status(), 404);
+      }
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.ok(overflow <= 1, `404 overflows ${width}px by ${overflow}px`);
       if (javaScriptEnabled && width <= 980) {
