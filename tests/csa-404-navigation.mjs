@@ -57,7 +57,10 @@ try {
       const fallback = page.locator('nav[aria-label="Primary navigation without JavaScript"]');
       if (javaScriptEnabled) {
         assert.equal(await fallback.count(), 0, 'scripted pages must not render duplicate fallback navigation');
+        assert.equal(await page.locator('.menu').getAttribute('hidden'), null, 'script reveals the menu only after initialization');
       } else {
+        assert.equal(await page.locator('.menu').isVisible(), false, 'no inert menu control may be advertised without JavaScript');
+        assert.equal(await page.getByRole('button', {name:'Open primary navigation'}).count(), 0, 'hidden menu must be absent from the accessible controls');
         assert.equal(await fallback.isVisible(), true, 'no-script primary navigation must be visible, not merely in the DOM');
         assert.deepEqual(await fallback.locator('a').evaluateAll(links => links.map(a => a.getAttribute('href'))), [...expectedNavigation, '/engagement/']);
         for (const href of [...expectedNavigation, '/engagement/']) {
