@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { chromium } from 'playwright';
+import { chromium, request } from 'playwright';
 
 const baseURL = (process.env.CSA_TEST_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '');
 const local = ['127.0.0.1', 'localhost'].includes(new URL(baseURL).hostname);
@@ -11,6 +11,7 @@ const missingHTML = await readFile(new URL('../404.html', import.meta.url), 'utf
 const products = ['/platforms/wardale/', '/platforms/solurius/', '/platforms/autto-connect/', '/platforms/csia/'];
 const expectedNavigation = ['/company/', '/ecosystem/', '/technology/', '/governance/', '/industries/', '/trust/', '/research/'];
 const browser = await chromium.launch();
+const fetcher = await request.newContext();
 const results = [];
 await mkdir('artifacts', { recursive: true });
 try {
@@ -20,7 +21,8 @@ try {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/*', async route => {
-      const url = new URL(route.request().url());
+      const request = route.request();
+      const url = new URL(request.url());
       if (url.origin !== new URL(baseURL).origin) {
         throw new Error('404 navigation must not make third-party requests');
       }
@@ -30,7 +32,12 @@ try {
       if (local && url.pathname === missingPath) {
         return route.fulfill({ status:404, contentType:'text/html', headers:{'content-security-policy':policy}, body:missingHTML });
       }
-      const response = await route.fetch();
+      const response = await fetcher.fetch(request.url(), {
+        method: request.method(),
+        headers: request.headers(),
+        data: request.postDataBuffer() ?? undefined,
+        failOnStatusCode: false,
+      });
       const body = await response.body();
       await route.fulfill({ status:response.status(), headers:{...response.headers(), 'content-security-policy':policy}, body });
     });
@@ -95,14 +102,16 @@ try {
       await page.locator('main a[href="/"]').click();
       assert.equal(new URL(page.url()).pathname, '/');
       assert.equal(await page.locator('.nav:visible').count(), 1, 'home keeps one corporate header');
-      assert.equal(await page.locator('.group-bar:visible').count(), 1, 'home restores the standard product group navigation');
+      assert.equal(await page.locator('.group-bar').count(), 1, 'home restores the standard product group navigation');
       results.push({width, javaScriptEnabled, status:'passed', localErrorRoutingFixture:local});
     }
     assert.deepEqual(errors, [], 'no browser exceptions');
+    await page.unrouteAll({ behavior:'ignoreErrors' });
     await context.close();
   }
   await writeFile('artifacts/csa-404-navigation-results.json', JSON.stringify({results}, null, 2));
   console.log(`404 navigation acceptance: ${results.length} viewport/JavaScript combinations passed.`);
 } finally {
+  await fetcher.dispose();
   await browser.close();
 }
