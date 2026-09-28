@@ -7,6 +7,7 @@ on:
       - '*.css'
       - '*.js'
       - 'tests/csa-mobile-smoke.mjs'
+      - 'tests/csa-404-navigation.mjs'
       - 'tests/csa-commercial-intake-db-acceptance.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/csa-mobile-validation.yml'
@@ -60,6 +61,8 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Verify 404 recovery with and without JavaScript
+        run: node tests/csa-404-navigation.mjs
       - name: Verify 390px customer path
         run: node tests/csa-mobile-smoke.mjs
       - name: Preserve acceptance screenshots
