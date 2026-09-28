@@ -4,6 +4,17 @@ import { chromium } from 'playwright';
 
 const base = process.env.CSA_TEST_BASE_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch();
+// Poll from the runner: requestAnimationFrame inside the page is disabled in the no-script case.
+async function waitForScroll(page, edge) {
+  let metrics;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    metrics = await page.evaluate(() => ({top:scrollY,bottom:document.documentElement.scrollHeight-innerHeight-scrollY}));
+    if (metrics[edge] < 4) return;
+    await new Promise(resolve => setTimeout(resolve,50));
+  }
+  await page.screenshot({path:`artifacts/csa-scroll-failure-${edge}.png`});
+  assert.fail(`${edge} scroll did not settle: ${JSON.stringify(metrics)}`);
+}
 await mkdir('artifacts', { recursive: true });
 try {
   for (const javaScriptEnabled of [true, false]) {
@@ -21,12 +32,12 @@ try {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       assert.ok(overflow <= 1, `journey toolbar must fit ${width}px`);
       await toolbar.getByRole('link', {name:'Go to bottom of page', exact:true}).click();
-      await page.waitForFunction(() => document.documentElement.scrollHeight - innerHeight - scrollY < 4, null, {timeout:5000});
+      await waitForScroll(page, 'bottom');
       const distance = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight - scrollY);
       assert.ok(distance < 4, 'Bottom must reach the end without hiding content');
       await page.screenshot({path:`artifacts/csa-journey-${width}-js-${javaScriptEnabled}.png`});
       await toolbar.getByRole('link', {name:'Go to top of page', exact:true}).click();
-      await page.waitForFunction(() => scrollY < 4, null, {timeout:5000});
+      await waitForScroll(page, 'top');
       assert.ok(await page.evaluate(() => scrollY < 4), 'Top returns to the beginning');
       await toolbar.locator('summary').click();
       await toolbar.locator('.journey-page-list a[href="/start/"]').click();
