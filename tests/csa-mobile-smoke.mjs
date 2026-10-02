@@ -45,7 +45,8 @@ try {
   const pathways = await page.locator('.choice .button.primary').evaluateAll(
     links => links.map(link => link.getAttribute('data-pathway'))
   );
-  assert.deepEqual(pathways, ['wardale', 'solurius', 'autto', 'csia']);
+  assert.deepEqual(pathways, [null, 'solurius', 'autto', 'csia']);
+  assert.equal(await page.locator('.choice .button.primary').first().getAttribute('href'), 'https://wardale.io/act');
 
   let intakeRequests = 0;
   await page.route('**/rest/v1/rpc/submit_csa_commercial_enquiry', async route => {
