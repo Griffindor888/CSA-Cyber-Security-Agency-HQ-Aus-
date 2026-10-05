@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 export const PUBLIC_FILES = [
   'index.html', '404.html', 'a11y.css', 'app.js', 'ecosystem-globe.css',
+  'gate.html', 'gate.css', 'csa-crest.avif',
   'favicon.svg', 'apple-touch-icon.png', 'llms.txt', 'mobile-nav.css', 'robots.txt', 'site.webmanifest',
   'sitemap.xml', 'social-card.svg', 'styles.css', '.well-known/security.txt',
   'accessibility/index.html', 'company/index.html', 'contact/index.html',
