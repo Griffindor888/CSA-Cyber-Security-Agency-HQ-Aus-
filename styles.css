@@ -141,18 +141,19 @@ h3{font-size:26px;line-height:1.12;letter-spacing:-.025em;margin:0 0 12px}
   .footBrand { grid-column: 1; }
 }
 
-/* A continuous route through the site, reachable at every scroll position. */
-.has-journey-tools { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
-html { scroll-padding-top: 96px; scroll-padding-bottom: 100px; }
-.journey-tools { position: fixed; z-index: 60; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); width: min(420px,calc(100% - 24px)); padding: 6px; border: 1px solid #c8d0da; border-radius: 18px; background: #fff; color: #14202f; box-shadow: 0 8px 30px #10274e26; }
-.journey-tools > a, .journey-pages > summary { min-width: 0; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 700; line-height: 1.25; border-radius: 12px; cursor: pointer; }
-.journey-tools > a > span:first-child, .journey-pages > summary > span:first-child { font-size: 20px; line-height: 1; }
-.journey-tools > a:hover, .journey-pages > summary:hover, .journey-pages[open] > summary { background: var(--blue-pale); color: var(--blue-deep); }
-.journey-pages > summary { list-style: none; }
-.journey-pages > summary::-webkit-details-marker { display: none; }
-.journey-page-list { position: absolute; bottom: calc(100% + 10px); left: 0; right: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); max-height: min(60vh,440px); overflow: auto; padding: 14px; background: #fff; border: 1px solid var(--line-strong); border-radius: 16px; box-shadow: 0 8px 30px #10274e26; }
-.journey-page-list a { min-height: 44px; display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; font-size: 14px; overflow-wrap: anywhere; }
-.journey-page-list a:hover { background: var(--blue-pale); }
+/* Page controls stay available without competing with the page. */
+.has-journey-tools { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+html { scroll-padding-top: 96px; scroll-padding-bottom: 76px; }
+.journey-tools { position: fixed; z-index: 60; right: max(16px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); color: #14202f; }
+.journey-menu > summary { min-height: 44px; padding: 0 15px; display: flex; align-items: center; gap: 8px; list-style: none; border: 1px solid #c8d0da; border-radius: 24px; background: #fff; box-shadow: 0 3px 14px #10274e18; font-size: 14px; font-weight: 600; cursor: pointer; }
+.journey-menu > summary::-webkit-details-marker { display: none; }
+.journey-menu > summary:hover, .journey-menu[open] > summary { background: var(--blue-pale); color: var(--blue-deep); }
+.journey-panel { position: absolute; bottom: calc(100% + 8px); right: 0; width: min(340px,calc(100vw - 32px)); max-height: calc(100vh - 88px); max-height: calc(100dvh - 88px); overflow-y: auto; overscroll-behavior: contain; padding: 12px; background: #fff; border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 8px 28px #10274e26; }
+.journey-actions, .journey-page-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2px; }
+.journey-actions { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.journey-actions a, .journey-page-list a { min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.journey-actions a { font-weight: 600; }
+.journey-actions a:hover, .journey-page-list a:hover { background: var(--blue-pale); }
 .journey-next { padding: 36px 0; border-top: 1px solid var(--line); background: #fff; }
 .journey-next p { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
 .journey-next .wrap > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
@@ -164,3 +165,8 @@ html { scroll-padding-top: 96px; scroll-padding-bottom: 100px; }
 .journey-orientation a { display: inline-block; padding: 10px 0; color: var(--blue); font-weight: 700; }
 .journey-tools a:focus-visible, .journey-tools summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 @media (max-width: 640px) { .journey-next .wrap > div { flex-direction: column; align-items: stretch; } .journey-next a { justify-content: space-between; } }
+
+/* The header menu is a compact, comfortably tappable icon. */
+.navright .menu { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); align-items: center; justify-content: center; line-height: 1; }
+.navright .menu:hover { background: var(--blue-pale); }
+.navright .menu svg { display: block; margin: auto; }

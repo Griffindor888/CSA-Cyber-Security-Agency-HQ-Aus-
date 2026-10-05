@@ -82,8 +82,11 @@
   menu.hidden = false;
   }
 
-  const pagePicker = document.querySelector('.journey-pages');
+  const pagePicker = document.querySelector('.journey-menu');
   if (pagePicker) {
+    pagePicker.addEventListener('click', event => {
+      if (event.target.closest('a')) pagePicker.open = false;
+    });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && pagePicker.open) {
         pagePicker.open = false;
