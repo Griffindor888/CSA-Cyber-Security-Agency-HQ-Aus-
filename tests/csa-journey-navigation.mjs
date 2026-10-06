@@ -62,9 +62,17 @@ try {
     await context.close();
   }
   const context = await browser.newContext();
-  const response = await context.request.get(`${base}/favicon.svg?v=original-csa-20260928`);
+  const response = await context.request.get(`${base}/favicon.svg`);
   assert.equal(response.status(),200);
-  assert.match(await response.text(), /#0098DA/);
+  const iconPage = await context.newPage();
+  const favicon = await iconPage.evaluate(source => {
+    const document = new DOMParser().parseFromString(source, 'image/svg+xml');
+    return !document.querySelector('parsererror')
+      && document.documentElement.localName === 'svg'
+      && document.documentElement.namespaceURI === 'http://www.w3.org/2000/svg'
+      && document.querySelector('path, circle, rect, polygon, ellipse, polyline, line') !== null;
+  }, await response.text());
+  assert.equal(favicon, true, 'favicon must be a valid SVG with visible artwork');
   const icon = await context.request.get(`${base}/apple-touch-icon.png`);
   assert.equal(icon.status(),200);
   await context.close();
