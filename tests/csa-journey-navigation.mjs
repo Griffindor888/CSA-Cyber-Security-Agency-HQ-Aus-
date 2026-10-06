@@ -82,6 +82,9 @@ try {
   const response = await context.request.get(`${base}/favicon.svg`);
   assert.equal(response.status(),200);
   const faviconSource = await response.text();
+  const legacyResponse = await context.request.get(`${base}/favicon.svg?v=original-csa-20260928`);
+  assert.equal(legacyResponse.status(),200);
+  const legacyFaviconSource = await legacyResponse.text();
   const iconPage = await context.newPage();
   const faviconIsRenderable = await iconPage.evaluate(source => {
     const document = new DOMParser().parseFromString(source, 'image/svg+xml');
@@ -92,6 +95,7 @@ try {
   }, faviconSource);
   assert.equal(faviconIsRenderable, true, 'favicon must be a valid SVG with visible artwork');
   // Old cached URL must serve the approved source, not the superseded cyan logo.
+  assert.equal(legacyFaviconSource, faviconSource);
   assert.equal(faviconSource, await readFile(new URL('../favicon.svg', import.meta.url), 'utf8'));
   assert.match(faviconSource, /<title[^>]*>CSA navigation star<\/title>/);
   assert.match(faviconSource, /eight-point institutional navigation star/);
