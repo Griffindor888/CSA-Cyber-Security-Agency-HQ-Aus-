@@ -1,7 +1,7 @@
 {
   "framework": null,
   "installCommand": "",
-  "buildCommand": "node --test tests/test_static_build.mjs tests/test_gate.mjs && node scripts/build_static.mjs",
+  "buildCommand": "node --test tests/test_static_build.mjs tests/test_gate.mjs tests/test_brand_identity.mjs && node scripts/build_static.mjs",
   "outputDirectory": ".static-output",
   "cleanUrls": false,
   "trailingSlash": true,

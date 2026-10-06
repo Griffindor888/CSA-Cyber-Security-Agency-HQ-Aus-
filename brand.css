@@ -1,0 +1,21 @@
+/* CSA Brand Book 1.0: shared identity tokens, not a redesign of the Arms. */
+:root {
+  --csa-navy: #0A2540;
+  --csa-royal-blue: #0E4C91;
+  --csa-steel: #8AA5C5;
+  --csa-silver: #D0D8E6;
+  --csa-gold-accent: #C6A966;
+  --csa-white: #FFFFFF;
+}
+.gate-header .brand { display: block; flex: 0 1 288px; min-width: 140px; padding: 8px 0; }
+.gate-header .brand img { display: block; width: 100%; max-width: 288px; height: auto; }
+.gate-header .desktop-nav { flex-shrink: 0; }
+.gate-header .mobile-nav { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .gate-header .brand { flex-basis: 240px; }
+  .gate-header .brand img { max-width: 240px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entrance-routes a { transition: none; }
+  .entrance-routes a:hover { transform: none; }
+}

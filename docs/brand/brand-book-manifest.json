@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "brandBookVersion": "1.0",
+  "status": "founder-approved-brand-standard",
+  "relatedPullRequest": 22,
+  "owner": "Cyber Security Agency Australia Pty Limited",
+  "repositoryText": "docs/brand/CSA-BRAND-BOOK-v1.0.md",
+  "statutoryConstitutionAmendment": false,
+  "governmentEndorsementClaim": false,
+  "canonicalDomain": "https://cs-agency.com.au/",
+  "sitemap": "https://cs-agency.com.au/sitemap.xml",
+  "corporateEmail": "info@cs-agency.com.au",
+  "motto": "PROTECT | ENABLE | SECURE | ADVANCE",
+  "crest": {
+    "supporters": "two eagles",
+    "supporterCount": 2,
+    "centralDevice": "W / WOS",
+    "starPoints": 8,
+    "productionMasterStatus": "pending-exact-approved-master-replacement",
+    "legacyAsset": "csa-crest.avif",
+    "legacyGitBlob": "d8d4b3f80e09bef36778798a5f1127facfdc6eb5"
+  },
+  "routes": {
+    "Company": "/company/",
+    "Ecosystem": "/ecosystem/",
+    "Contact": "/contact/"
+  },
+  "palette": {
+    "navy": "#0A2540",
+    "royalBlue": "#0E4C91",
+    "steel": "#8AA5C5",
+    "silver": "#D0D8E6",
+    "goldAccent": "#C6A966",
+    "white": "#FFFFFF"
+  },
+  "sourceDocuments": [
+    {
+      "file": "CSA_Brand_Book_v1.0.docx",
+      "bytes": 2214339,
+      "sha256": "a322554e23445d6d1cc3ef25725b0416fa075d2f65bfc62e9dcef7ccd387cc7d",
+      "location": "delivered-conversation-package",
+      "committedBinary": false
+    },
+    {
+      "file": "CSA_Brand_Book_v1.0.pdf",
+      "bytes": 583112,
+      "sha256": "b104c4c2b1e1e7cef02336d81619b88ee472a4c64a88cbcbdbfee5a69321801f",
+      "location": "delivered-conversation-package",
+      "committedBinary": false
+    },
+    {
+      "file": "CSA_Brand_Assets_Individual.zip",
+      "bytes": 2279056,
+      "sha256": "f5b1bb9d96cc72e8908cfe1dac6296ace489ac42e7cd3b2c56a305c389be9909",
+      "location": "delivered-conversation-package",
+      "committedBinary": false
+    }
+  ],
+  "illustrations": [
+    {"file":"01_closed_entrance.png","sha256":"fc24c661a06a5440aa83de470b382881a47af78b480a27fbb799d03baeab76c5","status":"approved-design-reference-not-production-artwork"},
+    {"file":"02_opening_entrance.png","sha256":"a612bc5c5ec07ec2c6994a5edc632b3118e2a58b8f8e52dd3a4c210c38d5bd34","status":"approved-design-reference-not-production-artwork"},
+    {"file":"03_company_door.png","sha256":"3341d2e1f2f095634391e3ed7ae90e267470303e0ecf080badae0660c49146a7","status":"approved-design-reference-not-production-artwork"},
+    {"file":"04_ecosystem_door.png","sha256":"fc5d7b1c9e0bb0caf3c205be24ad6c1ba7e9d7c1ad9cf7f0d99ffeeebd1adb49","status":"approved-design-reference-not-production-artwork"},
+    {"file":"05_contact_door.png","sha256":"3fc8d6b1c2b1d04a717d0cfbad331c5d7c6e2597aa2f115711d721fa9b4f889f","status":"approved-design-reference-not-production-artwork"},
+    {"file":"06_primary_coat_of_arms.png","sha256":"7fcb4768de3ba3eddee445ead63bfec31aaebd59af3afc7826be753bfce320d0","status":"approved-design-reference-not-production-artwork"},
+    {"file":"07_primary_logo.png","sha256":"a76e051610766c03c841fe9cd11719f8a333236c73e93eb3de7450cec145907f","status":"approved-design-reference-not-production-artwork"},
+    {"file":"08_favicon_app_icon.png","sha256":"c7f29e7a74385c757b226e25a704186159c6e3c4320802cee41868efb6bfd735","status":"approved-design-reference-not-production-artwork"},
+    {"file":"09_business_card.png","sha256":"fd4aad9a48ba19c3d16bfdc700b2844bba067d8bb95f56172daed761495a80a9","status":"approved-design-reference-not-production-artwork"},
+    {"file":"10_letterhead.png","sha256":"687094027898115b0e8179a16e268365ea4a4e7d464b873f6b1e3c79878549e8","status":"approved-design-reference-not-production-artwork"},
+    {"file":"11_email_signature.png","sha256":"0db9991d2be4422f90fb6174a031b26371ab8bf1cb9caab6f89776de8dcb628f","status":"approved-design-reference-not-production-artwork"},
+    {"file":"12_official_document_template.png","sha256":"14637a9eab578f01be35bb6e91bd0d4b59e02806ab8ff845ed8f0a1475bb851e","status":"approved-design-reference-not-production-artwork"},
+    {"file":"13_policy_report_template.png","sha256":"1714e6626002ec33cc8a9648aa9e664e56086935c59b1984a9c9eb3b0f25c569","status":"approved-design-reference-not-production-artwork"},
+    {"file":"14_invoice_quotation_template.png","sha256":"eedd6f01ed5a6d47ae32ba4cc893aaef34d67c085b592f6a175f4ae6cd698d0a","status":"approved-design-reference-not-production-artwork"},
+    {"file":"15_official_seal_stamp.png","sha256":"65bbfd61618c7964742aa5e968fbb4022bd96054f3952a70511a4c4dc5eeb5ae","status":"approved-design-reference-not-production-artwork"},
+    {"file":"16_colour_palette.png","sha256":"dd99d37a4c734ef970f17392b25f63ef18d679628355161ee95884ec18971cfd","status":"approved-design-reference-not-production-artwork"},
+    {"file":"17_sitemap.png","sha256":"36fa79f311514eac3a9deefb8ae0e8452a8b6e6c248c44a1f405c46f9927b0f0","status":"approved-design-reference-not-production-artwork"},
+    {"file":"18_domain_backlinks.png","sha256":"8c805e73622873b2d047a45611ec7ff7c0d555a8fd6029fa57acf396a329af5a","status":"approved-design-reference-not-production-artwork"},
+    {"file":"19_csa_star_app_icon.png","sha256":"5dbb00b00581e0fc2dc4bd1b8a048176361f17b6152d0dfb0308a53df9325f72","status":"approved-design-reference-not-production-artwork"}
+  ],
+  "publishedIdentityAssets": ["csa-header-logo.svg", "csa-header-logo-reversed.svg", "brand.css", "favicon.svg"],
+  "implementationNotes": [
+    "Source-document bytes remain in the delivered conversation package, not committed binaries. SHA-256 values identify those exact files.",
+    "Mock-up contact details and external backlinks are not production facts.",
+    "An independent company statement is required; the arms are a private corporate emblem.",
+    "A monochrome-reversed header wordmark is an approved-palette accessibility variation, not a new arms design.",
+    "The approved source book and manifest are repository documentation; the static website allowlist must not publish docs, source documents, agent runtimes or private implementation records."
+  ]
+}
