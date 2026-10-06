@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 const base = process.env.CSA_TEST_BASE_URL || 'http://127.0.0.1:4173';
@@ -81,7 +81,13 @@ try {
   const context = await browser.newContext();
   const response = await context.request.get(`${base}/favicon.svg?v=original-csa-20260928`);
   assert.equal(response.status(),200);
-  assert.match(await response.text(), /#0098DA/);
+  // Old cached URL must serve the approved source, not the superseded cyan logo.
+  const favicon = await response.text();
+  assert.equal(favicon, await readFile(new URL('../favicon.svg', import.meta.url), 'utf8'));
+  assert.match(favicon, /<title[^>]*>CSA navigation star<\/title>/);
+  assert.match(favicon, /eight-point institutional navigation star/);
+  for (const colour of ['#0A2540', '#0E4C91', '#D0D8E6']) assert.ok(favicon.includes(colour));
+  assert.doesNotMatch(favicon, /<script\b|<foreignObject\b|\son\w+=/i);
   const icon = await context.request.get(`${base}/apple-touch-icon.png`);
   assert.equal(icon.status(),200);
   await context.close();
