@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "javaScriptEnabled": true,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 390,
+      "javaScriptEnabled": true,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 768,
+      "javaScriptEnabled": true,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 1024,
+      "javaScriptEnabled": true,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 1440,
+      "javaScriptEnabled": true,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 320,
+      "javaScriptEnabled": false,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 390,
+      "javaScriptEnabled": false,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 768,
+      "javaScriptEnabled": false,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 1024,
+      "javaScriptEnabled": false,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    },
+    {
+      "width": 1440,
+      "javaScriptEnabled": false,
+      "status": "passed",
+      "localErrorRoutingFixture": true
+    }
+  ]
+}
