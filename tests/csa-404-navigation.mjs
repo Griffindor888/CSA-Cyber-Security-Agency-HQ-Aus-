@@ -39,7 +39,11 @@ try {
         failOnStatusCode: false,
       });
       const body = await response.body();
-      await route.fulfill({ status:response.status(), headers:{...response.headers(), 'content-security-policy':policy}, body });
+      const headers = { ...response.headers(), 'content-security-policy':policy };
+      // APIResponse.body() is decoded; discard the upstream encoding and length.
+      delete headers['content-encoding'];
+      delete headers['content-length'];
+      await route.fulfill({ status:response.status(), headers, body });
     });
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height:900 });

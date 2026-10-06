@@ -22,7 +22,11 @@ await page.route(`${baseURL}/**`, async route => {
     failOnStatusCode: false,
   });
   const body = await response.body();
-  await route.fulfill({ status: response.status(), headers: { ...response.headers(), 'content-security-policy': policy }, body });
+  const headers = { ...response.headers(), 'content-security-policy': policy };
+  // APIResponse.body() is decoded; discard the upstream encoding and length.
+  delete headers['content-encoding'];
+  delete headers['content-length'];
+  await route.fulfill({ status: response.status(), headers, body });
 });
 
 try {
