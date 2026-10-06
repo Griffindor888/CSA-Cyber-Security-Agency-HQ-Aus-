@@ -22,3 +22,6 @@ The detailed Corporate Arms are used for institutional and formal presentation. 
 
 ## Change control
 Changes to the supporters, W/WOS symbol, star, motto, palette, entrance, seal or legal identity require Founder approval and a recorded version update.
+
+## Approved brand-book adoption
+The Founder-approved [CSA Brand Book v1.0](CSA-BRAND-BOOK-v1.0.md) provides the detailed application standard. [The source manifest](brand-book-manifest.json) records document and illustration checksums, approved palette and routes, and production limitations. This adoption is a corporate brand standard, not a recorded amendment to the company's statutory constitution. Illustrated placeholder contact details and generated backlinks are not adopted as facts. The legacy raster is not the approved two-eagle production master; that replacement remains separately verifiable.
