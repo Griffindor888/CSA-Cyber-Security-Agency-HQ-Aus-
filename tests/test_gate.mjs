@@ -9,7 +9,7 @@ const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'
 test('the approved crest and exact gate source are real published assets',()=>{
  const art=readFileSync(new URL('../csa-crest.avif',import.meta.url));
  assert.equal(createHash('sha1').update(`blob ${art.length}\0`).update(art).digest('hex'),'d8d4b3f80e09bef36778798a5f1127facfdc6eb5');
- assert.equal(createHash('sha256').update(html).digest('hex'),'be481d47fab35ebfdc9b9fa5fc7917159b22a1de1bc557439c2ce9963ea81987');
+ assert.equal(createHash('sha256').update(html).digest('hex'),'937649a1dc87e6ed3bb5f9c9b46a9c54fa16d480785982f758004c9380210b64');
  for(const p of ['gate.html','gate.css','csa-crest.avif','index.html'])assert.ok(PUBLIC_FILES.includes(p));
  assert.equal(art.length,6711);
 });
