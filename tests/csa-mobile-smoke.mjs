@@ -31,6 +31,14 @@ await page.route(`${baseURL}/**`, async route => {
 
 try {
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  assert.equal(await page.locator('.institution-hero h1').textContent(), 'Governance infrastructure for consequential technology.');
+  assert.equal(await page.locator('.institution-actions .button.primary').getAttribute('href'), '/engagement/');
+  assert.equal(await page.locator('.institution-actions .button.secondary').getAttribute('href'), '/trust/');
+  assert.equal(await page.locator('.institution-brief').count(), 1, 'institutional profile must be present');
+  assert.equal(await page.locator('.institution-mandate > div').count(), 4, 'four-part operating mandate must be present');
+  const homeOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert.ok(homeOverflow <= 1, `390px institutional landing must not overflow; overflow=${homeOverflow}px`);
+  await page.screenshot({ path: 'artifacts/csa-home-institutional-mobile.png', fullPage: true });
   assert.equal(await page.locator('.menu').isVisible(), true, 'mobile menu button must be visible');
   assert.equal(await page.locator('.menu').getAttribute('aria-expanded'), 'false');
 
@@ -57,7 +65,8 @@ try {
   const pathways = await page.locator('.choice .button.primary').evaluateAll(
     links => links.map(link => link.getAttribute('data-pathway'))
   );
-  assert.deepEqual(pathways, ['wardale', 'solurius', 'autto', 'csia']);
+  assert.deepEqual(pathways, [null, 'solurius', 'autto', 'csia']);
+  assert.equal(await page.locator('.choice .button.primary').first().getAttribute('href'), 'https://wardale.io/act');
 
   let intakeRequests = 0;
   await page.route('**/rest/v1/rpc/submit_csa_commercial_enquiry', async route => {
