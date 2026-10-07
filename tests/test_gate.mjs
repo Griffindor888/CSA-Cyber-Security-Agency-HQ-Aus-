@@ -3,35 +3,63 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { PUBLIC_FILES } from '../scripts/build_static.mjs';
+const read = p => readFileSync(new URL(`../${p}`, import.meta.url));
+const html = read('gate.html').toString();
+const config = JSON.parse(read('vercel.json'));
+const digest = b => createHash('sha256').update(b).digest('hex');
 
-const html=readFileSync(new URL('../gate.html',import.meta.url),'utf8');
-const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'));
-test('the legacy crest is unchanged and the reviewed gate source is published',()=>{
- // The legacy raster is not the Founder-approved two-eagle master. See the brand manifest.
- const art=readFileSync(new URL('../csa-crest.avif',import.meta.url));
- assert.equal(createHash('sha1').update(`blob ${art.length}\0`).update(art).digest('hex'),'d8d4b3f80e09bef36778798a5f1127facfdc6eb5');
- assert.equal(createHash('sha256').update(html).digest('hex'),'2a165226a54ab8aacaebadfeebf28967ff56ab3c73ee089709a184a268998bd9');
- for(const p of ['gate.html','gate.css','brand.css','csa-header-logo.svg','csa-header-logo-reversed.svg','csa-crest.avif','index.html'])assert.ok(PUBLIC_FILES.includes(p));
- assert.equal(art.length,6711);
+test('root and gate are identical reviewed entrance sources with the approved two-eagle derivative', () => {
+  assert.equal(read('index.html').toString(), html);
+  assert.equal(digest(html), '6aa489d3bc1675b1d9d87daf801eab15f4ff707135ace9b65a0d697ee19b4c78');
+  const art = read('assets/brand/csa-two-eagle-arms.avif');
+  assert.equal(art.length,19676);
+  assert.equal(digest(art),'93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87');
+  assert.doesNotMatch(html,/csa-crest\.avif/);
+  for (const p of ['index.html','gate.html','gate.css','gate.js','assets/brand/csa-two-eagle-arms.avif','institution/index.html','brand.css','csa-header-logo.svg','csa-header-logo-reversed.svg']) assert.ok(PUBLIC_FILES.includes(p));
+  assert.ok(!PUBLIC_FILES.includes('csa-crest.avif'),'legacy national-animal artwork is not published');
 });
-test('root-only entrance rewrite preserves all existing corporate and intake routes',()=>{
- assert.deepEqual(config.rewrites,[{source:'/',destination:'/gate.html'}]);
- for(const match of html.matchAll(/(?:href|src)="(\/[^"]*)"/g)){
-  const path=match[1];const file=path==='/'?'index.html':path.endsWith('/')?path.slice(1)+'index.html':path.slice(1);
-  assert.ok(PUBLIC_FILES.includes(file),`Gate destination is not published: ${path}`);
- }
- for(const file of ['start/index.html','engagement/index.html','privacy/index.html','terms/index.html','security/index.html','platforms/wardale/index.html'])assert.ok(PUBLIC_FILES.includes(file));
+
+test('the original corporate content is preserved byte-for-byte behind the entrance', () => {
+  const original = read('institution/index.html');
+  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'6748d365c4b5bf067d59de0fd5f8980fe6d2ae65');
+  assert.match(original.toString(),/Governance infrastructure for consequential technology/);
+  assert.match(html,/href="\/institution\/"/);
 });
-test('the gate retains an explicit independent company identity and real accessible navigation',()=>{
- assert.match(html,/Cyber Security Agency Australia Pty Limited/);assert.match(html,/Independent Australian technology business/);
- assert.match(html,/class="enter" href="\/start\/"/);assert.match(html,/No obligation/);assert.match(html,/Skip to main content/);
- assert.match(html,/<details class="mobile-nav">/);assert.match(html,/<h1 id="gate-title">/);assert.match(html,/fetchpriority="high"/);
- assert.doesNotMatch(html,/<script|<style|style=|onclick=|Copyright.*2022/);
+
+test('root routing and every entrance destination resolve to reviewed public files', () => {
+  assert.deepEqual(config.rewrites,[{source:'/',destination:'/gate.html'}]);
+  for (const match of html.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
+    const path = match[1];
+    const file = path==='/'?'index.html':path.endsWith('/')?path.slice(1)+'index.html':path.slice(1);
+    assert.ok(PUBLIC_FILES.includes(file),`Entrance destination not published: ${path}`);
+  }
+  for (const file of ['start/index.html','engagement/index.html','privacy/index.html','terms/index.html','security/index.html','platforms/wardale/index.html']) assert.ok(PUBLIC_FILES.includes(file));
 });
-test('security restrictions and the reviewed publication allowlist remain intact',()=>{
- const headers=Object.fromEntries(config.headers.find(h=>h.source==='/(.*)').headers.map(h=>[h.key,h.value]));
- assert.equal(headers['X-Frame-Options'],'DENY');assert.equal(headers['X-Content-Type-Options'],'nosniff');
- assert.match(headers['Content-Security-Policy'],/script-src 'self'; style-src 'self'/);assert.doesNotMatch(headers['Content-Security-Policy'],/unsafe-inline|unsafe-eval/);
- assert.match(config.buildCommand,/tests\/test_static_build.mjs/);assert.match(config.buildCommand,/tests\/test_gate.mjs/);
- assert.ok(PUBLIC_FILES.every(p=>!p.startsWith('docs/')&&!p.startsWith('supabase/')&&!p.includes('*')));
+
+test('real opening controls, no-script destinations and two doors replace the redirect-only gate', () => {
+  assert.match(html,/Cyber Security Agency Australia Pty Limited/);
+  assert.match(html,/Independent Australian technology business/);
+  assert.match(html,/<button class="enter" type="button" aria-controls="welcome" aria-expanded="false">/);
+  assert.match(html,/class="door door-left"/); assert.match(html,/class="door door-right"/);
+  assert.match(html,/id="welcome" class="welcome" tabindex="-1"/);
+  assert.match(html,/<noscript>/); assert.match(html,/Skip entrance/);
+  assert.match(html,/fetchpriority="high"/);
+  assert.deepEqual([...html.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map(m=>m[0]),['<script defer src="/gate.js"></script>']);
+  assert.doesNotMatch(html,/<style\b|\sstyle=|\sonclick=|John Doe|123 Cyber Drive/);
+  const js=read('gate.js').toString();
+  assert.match(js,/addEventListener\('click', openEntrance\)/);
+  assert.match(js,/gate\.dataset\.state = 'opening'/);
+  assert.match(js,/prefers-reduced-motion/);
+  assert.doesNotMatch(js,/localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
+});
+
+test('security restrictions and explicit publication boundary remain intact', () => {
+  const headers=Object.fromEntries(config.headers.find(h=>h.source==='/(.*)').headers.map(h=>[h.key,h.value]));
+  assert.equal(headers['X-Frame-Options'],'DENY');
+  assert.equal(headers['X-Content-Type-Options'],'nosniff');
+  assert.match(headers['Content-Security-Policy'],/script-src 'self'; style-src 'self'/);
+  assert.doesNotMatch(headers['Content-Security-Policy'],/unsafe-inline|unsafe-eval/);
+  assert.match(config.buildCommand,/tests\/test_static_build.mjs/);
+  assert.match(config.buildCommand,/tests\/test_gate.mjs/);
+  assert.ok(PUBLIC_FILES.every(p=>! /^(docs|agent|supabase|tests|scripts)\//.test(p)&&!p.includes('*')));
 });

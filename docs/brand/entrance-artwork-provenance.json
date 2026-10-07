@@ -1,0 +1,22 @@
+{
+  "issue": 17,
+  "asset": "assets/brand/csa-two-eagle-arms.avif",
+  "status": "web-derivative-of-founder-supplied-final-artwork",
+  "sourceFilename": "2FE4B87A-3B2C-4B63-8979-FBC81DDA83E5.jpeg",
+  "sourceSha256": "f1e4fa0840f8cea1092a63453a5ce6d9aaa2dca2cfda0a6936e3bbe6ab527de1",
+  "sourceDimensions": [1254,1254],
+  "crop": [45,40,1205,935],
+  "processing": "Non-generative crop to the arms, foreground/background alpha matte, resampling and lossy AVIF encoding. No crest redraw, substituted supporters or text repainting.",
+  "dimensions": [512,395],
+  "bytes": 19676,
+  "sha256": "93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87",
+  "gitBlobSha": "b161ebd06eccc1b4e0bfeff8968bd2633905706d",
+  "supporters": "two eagles",
+  "centralDevice": "W",
+  "starPoints": 8,
+  "sourceRibbon": "PROTECT | ENABLE | SECURE",
+  "vectorMaster": false,
+  "bitIdenticalToSourceJpeg": false,
+  "governmentEndorsementClaim": false,
+  "note": "The rendered website uses the explicitly supplied final standalone arms. The later four-icon brand-board illustrations are not substituted for this source. ADVANCE in the existing header wordmark remains external brand text; the source ribbon is not edited."
+}

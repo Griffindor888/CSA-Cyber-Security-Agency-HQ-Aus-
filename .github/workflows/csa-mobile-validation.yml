@@ -6,16 +6,35 @@ on:
       - '**/*.html'
       - '*.css'
       - '*.js'
+      - 'assets/brand/**'
       - 'favicon.svg'
       - 'apple-touch-icon.png'
       - 'site.webmanifest'
+      - 'tests/csa-entrance-acceptance.mjs'
+      - 'tests/test_gate.mjs'
+      - 'scripts/build_static.mjs'
       - 'tests/csa-mobile-smoke.mjs'
       - 'tests/csa-404-navigation.mjs'
       - 'tests/csa-journey-navigation.mjs'
       - 'tests/csa-commercial-intake-db-acceptance.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/csa-mobile-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'gate.html'
+      - 'gate.css'
+      - 'gate.js'
+      - 'assets/brand/**'
+      - '.github/workflows/csa-mobile-validation.yml'
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Optional deployed CSA origin for exact entrance readback; no customer submissions are sent to it.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -35,16 +54,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d csa_commercial_acceptance"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/csa_commercial_acceptance
+      CSA_ENTRANCE_BASE_URL: ${{ inputs.base_url || (github.event_name == 'push' && 'https://cs-agency.com.au') || 'http://127.0.0.1:4173' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Verify isolated durable commercial intake
         run: bash tests/csa-commercial-intake-db-acceptance.sh
       - name: Assert commercial evidence boundary
@@ -56,15 +74,47 @@ jobs:
       - name: Install pinned browser runner
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Serve exact pull-request content
+          npx playwright install --with-deps chromium webkit
+      - name: Build and serve only reviewed public files
         run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/csa-http.log 2>&1 &
+          node --test tests/test_static_build.mjs tests/test_gate.mjs tests/test_brand_identity.mjs
+          node scripts/build_static.mjs
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory .static-output > /tmp/csa-http.log 2>&1 &
           for attempt in {1..20}; do
             curl --fail --silent http://127.0.0.1:4173/ >/dev/null && exit 0
             sleep 1
           done
           exit 1
+      - name: Wait for the exact merged root on the canonical domain
+        if: github.event_name == 'push'
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const hash = b => createHash('sha256').update(b).digest('hex');
+          const expected = hash(await readFile('index.html'));
+          for (let i=0;i<60;i++) {
+            try {
+              const r=await fetch('https://cs-agency.com.au/',{headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(10000)});
+              if(r.ok && hash(Buffer.from(await r.arrayBuffer()))===expected) {
+                console.log('Canonical root matches the merged source: '+expected);
+                process.exit(0);
+              }
+            } catch(e) { console.log('Awaiting canonical deployment: '+e.name); }
+            await new Promise(r=>setTimeout(r,5000));
+          }
+          throw new Error('Canonical root did not match the merged source; do not claim entrance release acceptance.');
+          NODE
+      - name: Verify actual opening-door entrance in Chromium
+        env:
+          CSA_TEST_BASE_URL: ${{ env.CSA_ENTRANCE_BASE_URL }}
+          CSA_TEST_BROWSER: chromium
+        run: node tests/csa-entrance-acceptance.mjs
+      - name: Verify actual opening-door entrance in WebKit
+        env:
+          CSA_TEST_BASE_URL: ${{ env.CSA_ENTRANCE_BASE_URL }}
+          CSA_TEST_BROWSER: webkit
+        run: node tests/csa-entrance-acceptance.mjs
       - name: Verify 404 recovery with and without JavaScript
         run: node tests/csa-404-navigation.mjs
       - name: Verify 390px customer path

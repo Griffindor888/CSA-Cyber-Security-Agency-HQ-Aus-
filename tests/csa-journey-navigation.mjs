@@ -59,9 +59,10 @@ try {
       await toolbar.getByRole('link',{name:'Back to Our products',exact:true}).click();
       await page.waitForURL(`${base}/technology/`);
     }
+    // The preserved corporate overview retains the page-picker; the root now has its own entrance contract.
     // Model a 400%-zoom visual viewport: the open picker must remain above the sticky header.
     await page.setViewportSize({width:320,height:256});
-    await page.goto(`${base}/`);
+    await page.goto(`${base}/institution/`);
     await openJourney(page);
     const firstLink = page.locator('.journey-actions a').first();
     assert.equal(await firstLink.evaluate(element => {
