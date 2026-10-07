@@ -6,9 +6,13 @@ on:
       - '**/*.html'
       - '*.css'
       - '*.js'
+      - 'assets/brand/**'
       - 'favicon.svg'
       - 'apple-touch-icon.png'
       - 'site.webmanifest'
+      - 'tests/csa-entrance-acceptance.mjs'
+      - 'tests/test_gate.mjs'
+      - 'scripts/build_static.mjs'
       - 'tests/csa-mobile-smoke.mjs'
       - 'tests/csa-404-navigation.mjs'
       - 'tests/csa-journey-navigation.mjs'
@@ -16,6 +20,12 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/csa-mobile-validation.yml'
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Optional deployed CSA origin for exact entrance readback; no customer submissions are sent to it.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -35,16 +45,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d csa_commercial_acceptance"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/csa_commercial_acceptance
+      CSA_ENTRANCE_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Verify isolated durable commercial intake
         run: bash tests/csa-commercial-intake-db-acceptance.sh
       - name: Assert commercial evidence boundary
@@ -56,15 +65,27 @@ jobs:
       - name: Install pinned browser runner
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Serve exact pull-request content
+          npx playwright install --with-deps chromium webkit
+      - name: Build and serve only reviewed public files
         run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/csa-http.log 2>&1 &
+          node --test tests/test_static_build.mjs tests/test_gate.mjs tests/test_brand_identity.mjs
+          node scripts/build_static.mjs
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory .static-output > /tmp/csa-http.log 2>&1 &
           for attempt in {1..20}; do
             curl --fail --silent http://127.0.0.1:4173/ >/dev/null && exit 0
             sleep 1
           done
           exit 1
+      - name: Verify actual opening-door entrance in Chromium
+        env:
+          CSA_TEST_BASE_URL: ${{ env.CSA_ENTRANCE_BASE_URL }}
+          CSA_TEST_BROWSER: chromium
+        run: node tests/csa-entrance-acceptance.mjs
+      - name: Verify actual opening-door entrance in WebKit
+        env:
+          CSA_TEST_BASE_URL: ${{ env.CSA_ENTRANCE_BASE_URL }}
+          CSA_TEST_BROWSER: webkit
+        run: node tests/csa-entrance-acceptance.mjs
       - name: Verify 404 recovery with and without JavaScript
         run: node tests/csa-404-navigation.mjs
       - name: Verify 390px customer path

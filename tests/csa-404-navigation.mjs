@@ -105,8 +105,17 @@ try {
       await page.screenshot({path:`artifacts/csa-404-${width}-js-${javaScriptEnabled}.png`,fullPage:true});
       await page.locator('main a[href="/"]').click();
       assert.equal(new URL(page.url()).pathname, '/');
-      assert.equal(await page.locator('.nav:visible').count(), 1, 'home keeps one corporate header');
-      assert.equal(await page.locator('.group-bar').count(), 1, 'home restores the standard product group navigation');
+      assert.equal(await page.locator('.gate-header:visible').count(), 1, 'home must recover to the approved entrance');
+      if (javaScriptEnabled) {
+        await page.locator('.enter').waitFor({state:'visible'});
+        assert.equal(await page.locator('.entrance').getAttribute('data-state'),'closed');
+      } else {
+        assert.equal(await page.locator('#welcome').isVisible(),true);
+        assert.equal(await page.locator('.entrance-routes a').count(),3);
+      }
+      await page.goto(`${baseURL}/institution/`,{waitUntil:'networkidle'});
+      assert.equal(await page.locator('.nav:visible').count(),1,'corporate header remains available behind the entrance');
+      assert.equal(await page.locator('.group-bar').count(),1,'corporate product navigation is preserved');
       results.push({width, javaScriptEnabled, status:'passed', localErrorRoutingFixture:local});
     }
     assert.deepEqual(errors, [], 'no browser exceptions');

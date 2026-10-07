@@ -30,7 +30,8 @@ await page.route(`${baseURL}/**`, async route => {
 });
 
 try {
-  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  // Corporate content is preserved behind the root entrance, not mistaken for it.
+  await page.goto(`${baseURL}/institution/`, { waitUntil: 'networkidle' });
   assert.equal(await page.locator('.institution-hero h1').textContent(), 'Governance infrastructure for consequential technology.');
   assert.equal(await page.locator('.institution-actions .button.primary').getAttribute('href'), '/engagement/');
   assert.equal(await page.locator('.institution-actions .button.secondary').getAttribute('href'), '/trust/');
@@ -119,7 +120,7 @@ try {
   await page.screenshot({ path: 'artifacts/csa-start-mobile.png', fullPage: true });
 
   const routes = [
-    '/', '/accessibility/', '/company/', '/contact/', '/ecosystem/', '/engagement/',
+    '/', '/institution/', '/accessibility/', '/company/', '/contact/', '/ecosystem/', '/engagement/',
     '/governance/', '/industries/', '/knowledge/', '/platforms/autto-connect/',
     '/platforms/csia/', '/platforms/solurius/', '/platforms/wardale/', '/privacy/',
     '/research/', '/security/', '/start/', '/technology/', '/terms/', '/trust/',
