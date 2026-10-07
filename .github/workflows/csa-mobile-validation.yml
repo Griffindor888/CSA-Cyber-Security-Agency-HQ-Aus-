@@ -19,6 +19,15 @@ on:
       - 'tests/csa-commercial-intake-db-acceptance.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/csa-mobile-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'gate.html'
+      - 'gate.css'
+      - 'gate.js'
+      - 'assets/brand/**'
+      - '.github/workflows/csa-mobile-validation.yml'
   workflow_dispatch:
     inputs:
       base_url:
@@ -48,7 +57,7 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/csa_commercial_acceptance
-      CSA_ENTRANCE_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
+      CSA_ENTRANCE_BASE_URL: ${{ inputs.base_url || (github.event_name == 'push' && 'https://cs-agency.com.au') || 'http://127.0.0.1:4173' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,6 +85,26 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Wait for the exact merged root on the canonical domain
+        if: github.event_name == 'push'
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const hash = b => createHash('sha256').update(b).digest('hex');
+          const expected = hash(await readFile('index.html'));
+          for (let i=0;i<60;i++) {
+            try {
+              const r=await fetch('https://cs-agency.com.au/',{headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(10000)});
+              if(r.ok && hash(Buffer.from(await r.arrayBuffer()))===expected) {
+                console.log('Canonical root matches the merged source: '+expected);
+                process.exit(0);
+              }
+            } catch(e) { console.log('Awaiting canonical deployment: '+e.name); }
+            await new Promise(r=>setTimeout(r,5000));
+          }
+          throw new Error('Canonical root did not match the merged source; do not claim entrance release acceptance.');
+          NODE
       - name: Verify actual opening-door entrance in Chromium
         env:
           CSA_TEST_BASE_URL: ${{ env.CSA_ENTRANCE_BASE_URL }}
