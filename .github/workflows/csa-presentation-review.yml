@@ -7,12 +7,17 @@ on:
       - 'gate.js'
       - 'tests/test_public_identity.mjs'
       - 'tests/csa-founder-presentation.mjs'
+      - 'tests/csa-entrance-typography.mjs'
       - '.github/workflows/csa-presentation-review.yml'
   push:
     branches: [main]
     paths:
       - 'company/index.html'
       - 'knowledge/index.html'
+      - 'index.html'
+      - 'gate.html'
+      - 'gate.css'
+      - 'gate.js'
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,6 +45,8 @@ jobs:
           exit 1
       - name: Verify unnamed Founder review in Chromium and WebKit
         run: node tests/csa-founder-presentation.mjs
+      - name: Verify centred gate typography in Chromium and WebKit
+        run: node tests/csa-entrance-typography.mjs
       - name: Archive only reviewed public website bytes
         if: success()
         run: |
