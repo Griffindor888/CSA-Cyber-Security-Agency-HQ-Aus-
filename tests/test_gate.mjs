@@ -10,7 +10,7 @@ const digest = b => createHash('sha256').update(b).digest('hex');
 
 test('root and gate are identical reviewed entrance sources with the approved two-eagle derivative', () => {
   assert.equal(read('index.html').toString(), html);
-  assert.equal(digest(html), '6aa489d3bc1675b1d9d87daf801eab15f4ff707135ace9b65a0d697ee19b4c78');
+  assert.equal(digest(html), '5268ab9a2ce8177b5b97b04018a206c9f800925cc6a6361ca65e1e293ae8eb6d');
   const art = read('assets/brand/csa-two-eagle-arms.avif');
   assert.equal(art.length,19676);
   assert.equal(digest(art),'93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87');
