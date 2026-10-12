@@ -309,3 +309,6 @@ html { scroll-padding-top: 96px; scroll-padding-bottom: 76px; }
 }
 
 .brand-svg{display:flex;align-items:center}.brand-svg img{display:block;width:min(320px,42vw);height:auto;max-height:54px}@media(max-width:760px){.brand-svg img{width:min(245px,62vw)}}
+
+/* Direct website destinations stay visible without opening a menu. */
+.product-websites{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 24px;padding:28px max(20px,env(safe-area-inset-left));background:#edf2f7;color:#172842;font-size:15px}.product-websites strong{flex-basis:100%;text-align:center}.product-websites a{display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;text-underline-offset:4px}.product-websites a:focus-visible{outline:3px solid #0e4c91;outline-offset:4px}
