@@ -27,8 +27,9 @@ test('Founder review lives in Knowledge, reached by an unnamed company-footer li
  assert.deepEqual(links,['/company/','/governance/','/research/']);
  assert.doesNotMatch(review,/<iframe\b|target="_blank"|sign.?in.*required/i);
 });
-test('public entry points never hand visitors to ChatGPT-hosted review or prototype sign-in',()=>{
- for(const path of PUBLIC_FILES.filter(p=>/\.(?:html|js|json|webmanifest)$/.test(p))){
+test('every textual published asset excludes ChatGPT-hosted visitor destinations',()=>{
+ // Explicitly exclude only the binary images, not text formats such as SVG/XML/CSS/TXT.
+ for(const path of PUBLIC_FILES.filter(p=>! /\.(?:avif|png)$/i.test(p))){
   const content=read(path);
   assert.doesNotMatch(content,/https?:\/\/(?:[a-z0-9-]+\.)*(?:chatgpt\.site|chatgpt\.com|chat\.openai\.com)(?:[\/?#"'\s]|$)/i,`Unexpected external prototype journey: ${path}`);
  }
