@@ -12,6 +12,7 @@ on:
       - 'site.webmanifest'
       - 'tests/csa-entrance-acceptance.mjs'
       - 'tests/test_gate.mjs'
+      - 'tests/test_solurius_sources.mjs'
       - 'scripts/build_static.mjs'
       - 'tests/csa-mobile-smoke.mjs'
       - 'tests/csa-404-navigation.mjs'
@@ -77,7 +78,7 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Build and serve only reviewed public files
         run: |
-          node --test tests/test_static_build.mjs tests/test_gate.mjs tests/test_brand_identity.mjs
+          node --test tests/test_static_build.mjs tests/test_gate.mjs tests/test_brand_identity.mjs tests/test_solurius_sources.mjs
           node scripts/build_static.mjs
           python3 -m http.server 4173 --bind 127.0.0.1 --directory .static-output > /tmp/csa-http.log 2>&1 &
           for attempt in {1..20}; do
