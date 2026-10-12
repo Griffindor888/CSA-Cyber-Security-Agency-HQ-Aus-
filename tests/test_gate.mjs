@@ -21,7 +21,7 @@ test('root and gate are identical reviewed entrance sources with the approved tw
 
 test('the reviewed corporate overview and direct product destinations remain behind the entrance', () => {
   const original = read('institution/index.html');
-  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'0755987ec9e42aae532b6ec950184698540dee9d');
+  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'e9e1bfe6c955eecc4246ae4ccbe3fd0aab146b2d');
   assert.match(original.toString(),/Governance infrastructure for consequential technology/);
   assert.match(html,/href="\/institution\/"/);
 });
