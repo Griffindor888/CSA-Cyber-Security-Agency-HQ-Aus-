@@ -21,5 +21,16 @@ test('Founder review lives in Knowledge, reached by an unnamed company-footer li
  assert.match(knowledge,/<section class="section" id="founder-review" aria-labelledby="founder-review-title">/);
  assert.match(knowledge,/<h2 id="founder-review-title">Founder’s Review<\/h2>/);
  assert.match(knowledge,/Selected founder insights and public review material/);
- assert.match(knowledge,/rel="noopener noreferrer">Public Founder Review/);
+ const review=knowledge.match(/<section class="section" id="founder-review"[^]*?<\/section>/)?.[0];
+ assert.ok(review);
+ const links=[...review.matchAll(/href="([^"]*)"/g)].map(m=>m[1]);
+ assert.deepEqual(links,['/company/','/governance/','/research/']);
+ assert.doesNotMatch(review,/<iframe\b|target="_blank"|sign.?in.*required/i);
+});
+test('every textual published asset excludes ChatGPT-hosted visitor destinations',()=>{
+ // Explicitly exclude only the binary images, not text formats such as SVG/XML/CSS/TXT.
+ for(const path of PUBLIC_FILES.filter(p=>! /\.(?:avif|png)$/i.test(p))){
+  const content=read(path);
+  assert.doesNotMatch(content,/https?:\/\/(?:[a-z0-9-]+\.)*(?:chatgpt\.site|chatgpt\.com|chat\.openai\.com)(?:[\/?#"'\s]|$)/i,`Unexpected external prototype journey: ${path}`);
+ }
 });
