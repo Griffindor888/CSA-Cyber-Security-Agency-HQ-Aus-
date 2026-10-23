@@ -129,6 +129,21 @@
     });
   });
 
+  // Retain only in-memory request identity while a result is unknown.
+  let pendingEnquiry = null;
+  let submittingEnquiry = false;
+  const newCorrelationId = () => {
+    if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
+    if (typeof globalThis.crypto?.getRandomValues !== 'function') return null;
+    try {
+      const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    } catch { return null; }
+  };
+
   const emailFallback = values => {
     const subject = encodeURIComponent(`CSA ${values.pathway} enquiry`);
     const body = encodeURIComponent(
@@ -139,16 +154,36 @@
 
   enquiryForm.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!enquiryForm.reportValidity()) return;
+    if (submittingEnquiry || !enquiryForm.reportValidity()) return;
 
     const values = Object.fromEntries(new FormData(enquiryForm).entries());
-    const correlationId = globalThis.crypto?.randomUUID?.() ||
-      `${Date.now()}-0000-4000-8000-000000000000`;
+    const requestBody = {
+      p_pathway: values.pathway,
+      p_organisation: values.organisation,
+      p_contact_name: values.contact_name,
+      p_email: values.email,
+      p_timeframe: values.timeframe,
+      p_requirement: values.requirement,
+      p_consent: values.consent === 'on',
+      p_source_path: window.location.pathname,
+      p_website: values.website || null,
+    };
+    const retryKey = JSON.stringify(requestBody);
+    const correlationId = pendingEnquiry?.retryKey === retryKey
+      ? pendingEnquiry.correlationId : newCorrelationId();
     emailFallback(values);
     fallback.hidden = true;
+    if (!correlationId) {
+      formStatus.textContent = 'A secure request reference is unavailable. Use the email option instead.';
+      formStatus.dataset.state = 'error';
+      fallback.hidden = false;
+      return;
+    }
+    pendingEnquiry = { retryKey, correlationId };
     formStatus.textContent = 'Submitting your enquiry…';
     formStatus.dataset.state = 'pending';
     submitButton.disabled = true;
+    submittingEnquiry = true;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -160,37 +195,28 @@
           apikey: publishableKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          p_pathway: values.pathway,
-          p_organisation: values.organisation,
-          p_contact_name: values.contact_name,
-          p_email: values.email,
-          p_timeframe: values.timeframe,
-          p_requirement: values.requirement,
-          p_consent: values.consent === 'on',
-          p_correlation_id: correlationId,
-          p_source_path: window.location.pathname,
-          p_website: values.website || null,
-        }),
+        body: JSON.stringify({ ...requestBody, p_correlation_id: correlationId }),
         signal: controller.signal,
       });
 
       const data = await response.json().catch(() => null);
       const receipt = Array.isArray(data) ? data[0] : data;
-      if (!response.ok || !receipt?.receipt_id) {
-        throw new Error('CSA_ENQUIRY_RECEIPT_MISSING');
+      if (!response.ok || !receipt?.receipt_id || receipt.correlation_id !== correlationId) {
+        throw new Error('CSA_ENQUIRY_RECEIPT_UNCONFIRMED');
       }
 
+      pendingEnquiry = null;
       formStatus.textContent = `Enquiry captured. Reference: ${receipt.receipt_id}`;
       formStatus.dataset.state = 'success';
       enquiryForm.reset();
     } catch {
-      formStatus.textContent = 'Your enquiry was not confirmed. No false success has been recorded.';
+      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details reuses request reference ${correlationId}. Email creates a separate message.`;
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
     } finally {
       clearTimeout(timeout);
       submitButton.disabled = false;
+      submittingEnquiry = false;
     }
   });
 })();

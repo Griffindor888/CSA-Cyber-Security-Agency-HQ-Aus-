@@ -70,25 +70,22 @@ try {
   assert.equal(await page.locator('.choice .button.primary').first().getAttribute('href'), 'https://wardale.io/act');
 
   let intakeRequests = 0;
+  const intakeBodies = [];
   await page.route('**/rest/v1/rpc/submit_csa_commercial_enquiry', async route => {
     intakeRequests += 1;
     const headers = route.request().headers();
     assert.ok(headers.apikey?.startsWith('sb_publishable_'), 'enquiry uses the public API-key header');
     assert.equal(headers.authorization, undefined, 'a publishable key is not a bearer token');
-    if (intakeRequests === 1) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([{
-          receipt_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-          pathway: 'solurius',
-          status: 'new',
-          correlation_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-        }]),
-      });
+    const posted = JSON.parse(route.request().postData() || '{}');
+    intakeBodies.push(posted);
+    if (intakeRequests === 2 || intakeRequests === 4) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
       return;
     }
-    await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{
+      receipt_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      pathway: posted.p_pathway, status: 'new', correlation_id: posted.p_correlation_id,
+    }]) });
   });
 
   await page.locator('[data-pathway="solurius"]').click();
@@ -114,6 +111,26 @@ try {
   await page.locator('[data-form-status][data-state="error"]').waitFor();
   assert.equal(await page.locator('[data-email-fallback]').isVisible(), true);
   assert.match(await page.locator('[data-form-status]').textContent(), /No false success/);
+
+  await page.locator('#csa-commercial-enquiry [type="submit"]').click();
+  await page.locator('[data-form-status][data-state="success"]').waitFor();
+  assert.equal(intakeBodies[2].p_correlation_id, intakeBodies[1].p_correlation_id, 'unchanged uncertain retry must preserve correlation');
+  assert.notEqual(intakeBodies[0].p_correlation_id, intakeBodies[1].p_correlation_id, 'a new enquiry needs a new correlation');
+
+  await page.locator('[name="pathway"]').selectOption('wardale');
+  await page.locator('[name="organisation"]').fill('Synthetic Organisation');
+  await page.locator('[name="contact_name"]').fill('Synthetic Founder');
+  await page.locator('[name="email"]').fill('synthetic@example.com');
+  await page.locator('[name="timeframe"]').selectOption('30_days');
+  await page.locator('[name="requirement"]').fill('Review governed AI use with an approved owner.');
+  await page.locator('[name="consent"]').check();
+  await page.locator('#csa-commercial-enquiry [type="submit"]').click();
+  await page.locator('[data-form-status][data-state="error"]').waitFor();
+  const uncertainCorrelation = intakeBodies[3].p_correlation_id;
+  await page.locator('[name="requirement"]').fill('Revised controlled scope after an uncertain response.');
+  await page.locator('#csa-commercial-enquiry [type="submit"]').click();
+  await page.locator('[data-form-status][data-state="success"]').waitFor();
+  assert.notEqual(intakeBodies[4].p_correlation_id, uncertainCorrelation, 'changed enquiry cannot replay an old correlation');
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, `390px selector must not overflow horizontally; overflow=${overflow}px`);
