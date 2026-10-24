@@ -1,0 +1,32 @@
+name: CSA enquiry retry recovery regression
+
+on:
+  push:
+    branches:
+      - security/csa-enquiry-retry-recovery-20261025
+    paths:
+      - app.js
+      - tests/csa-commercial-retry-recovery.test.mjs
+      - .github/workflows/csa-intake-retry-validation.yml
+  pull_request:
+    paths:
+      - app.js
+      - tests/csa-commercial-retry-recovery.test.mjs
+      - .github/workflows/csa-intake-retry-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  browser-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify client retry, confidentiality, and response identity
+        run: node --test tests/csa-commercial-retry-recovery.test.mjs
+      - name: Verify publication boundary and existing static asset contract
+        run: node --test tests/test_static_build.mjs
