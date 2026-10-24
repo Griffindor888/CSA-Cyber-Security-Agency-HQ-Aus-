@@ -129,9 +129,52 @@
     });
   });
 
-  // Retain only in-memory request identity while a result is unknown.
+  // The server-side correlation-id unique constraint is the recovery authority.
+  // Store only an opaque UUID + SHA-256 fingerprint in this tab while a request
+  // may have committed. No names, emails, requirement text, or consent are stored.
+  // Session storage survives reload in the same tab; it is NOT off-device custody.
+  const pendingStorageKey = 'csa.enquiry.pending.v1';
+  const retryRetentionMs = 24 * 60 * 60 * 1000;
+  const correlationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   let pendingEnquiry = null;
   let submittingEnquiry = false;
+
+  const digestRequest = async requestBody => {
+    try {
+      if (typeof TextEncoder !== 'function' || typeof globalThis.crypto?.subtle?.digest !== 'function') return null;
+      const bytes = new TextEncoder().encode(JSON.stringify(requestBody));
+      const hash = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes));
+      return Array.from(hash, byte => byte.toString(16).padStart(2, '0')).join('');
+    } catch { return null; }
+  };
+
+  const readPendingCorrelation = digest => {
+    if (!digest) return null;
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(pendingStorageKey) || 'null');
+      const age = Date.now() - saved?.createdAt;
+      return saved?.version === 1 && saved.digest === digest &&
+        correlationPattern.test(saved.correlationId) &&
+        Number.isSafeInteger(saved.createdAt) && age >= 0 && age <= retryRetentionMs
+        ? saved.correlationId : null;
+    } catch { return null; }
+  };
+
+  const rememberPending = (digest, correlationId) => {
+    if (!digest) return;
+    try {
+      window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({
+        version: 1, digest, correlationId, createdAt: Date.now(),
+      }));
+    } catch { /* Private mode or storage restrictions: in-memory retry still works. */ }
+  };
+
+  const clearPending = correlationId => {
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(pendingStorageKey) || 'null');
+      if (saved?.correlationId === correlationId) window.sessionStorage.removeItem(pendingStorageKey);
+    } catch { /* Never turn a confirmed server response into a client error. */ }
+  };
   const newCorrelationId = () => {
     if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
     if (typeof globalThis.crypto?.getRandomValues !== 'function') return null;
@@ -147,7 +190,7 @@
   const emailFallback = values => {
     const subject = encodeURIComponent(`CSA ${values.pathway} enquiry`);
     const body = encodeURIComponent(
-      `Organisation: ${values.organisation}\nContact: ${values.contact_name}\nTimeframe: ${values.timeframe}\nRequirement: ${values.requirement}`
+      `Organisation: ${values.organisation}\nContact: ${values.contact_name}\nEmail: ${values.email}\nTimeframe: ${values.timeframe}\nRequirement: ${values.requirement}`
     );
     fallback.href = `mailto:info@cs-agency.com.au?subject=${subject}&body=${body}`;
   };
@@ -155,6 +198,10 @@
   enquiryForm.addEventListener('submit', async event => {
     event.preventDefault();
     if (submittingEnquiry || !enquiryForm.reportValidity()) return;
+    // Lock before the asynchronous digest; otherwise a double click can
+    // dispatch two different random correlation IDs in the same tab.
+    submittingEnquiry = true;
+    submitButton.disabled = true;
 
     const values = Object.fromEntries(new FormData(enquiryForm).entries());
     const requestBody = {
@@ -169,22 +216,23 @@
       p_website: values.website || null,
     };
     const retryKey = JSON.stringify(requestBody);
-    const correlationId = pendingEnquiry?.retryKey === retryKey
-      ? pendingEnquiry.correlationId : newCorrelationId();
+    const digest = await digestRequest(requestBody);
+    const correlationId = (pendingEnquiry?.retryKey === retryKey && pendingEnquiry.correlationId) ||
+      readPendingCorrelation(digest) || newCorrelationId();
     emailFallback(values);
     fallback.hidden = true;
     if (!correlationId) {
       formStatus.textContent = 'A secure request reference is unavailable. Use the email option instead.';
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
+      submitButton.disabled = false;
+      submittingEnquiry = false;
       return;
     }
     pendingEnquiry = { retryKey, correlationId };
+    rememberPending(digest, correlationId);
     formStatus.textContent = 'Submitting your enquiry…';
     formStatus.dataset.state = 'pending';
-    submitButton.disabled = true;
-    submittingEnquiry = true;
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -201,16 +249,18 @@
 
       const data = await response.json().catch(() => null);
       const receipt = Array.isArray(data) ? data[0] : data;
-      if (!response.ok || !receipt?.receipt_id || receipt.correlation_id !== correlationId) {
+      if (!response.ok || !correlationPattern.test(receipt?.receipt_id) ||
+          receipt.correlation_id !== correlationId || receipt.pathway !== requestBody.p_pathway) {
         throw new Error('CSA_ENQUIRY_RECEIPT_UNCONFIRMED');
       }
 
       pendingEnquiry = null;
+      clearPending(correlationId);
       formStatus.textContent = `Enquiry captured. Reference: ${receipt.receipt_id}`;
       formStatus.dataset.state = 'success';
       enquiryForm.reset();
     } catch {
-      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details reuses request reference ${correlationId}. Email creates a separate message.`;
+      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload when secure session storage is available). Email creates a separate message.`;
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
     } finally {
