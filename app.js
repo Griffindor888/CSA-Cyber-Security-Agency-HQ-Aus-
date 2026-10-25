@@ -213,7 +213,7 @@
         reason: 'The earlier enquiry outcome remains unknown after the 24-hour automatic recovery window. Contact CSA with reference ' + entry.correlationId + ' before resubmitting.'
       };
       pendingByPayload.set(retryKey, entry);
-      return { correlationId: entry.correlationId, stored: Boolean(stored) };
+      return { correlationId: entry.correlationId, stored: Boolean(stored), wasPending: true };
     }
     if (saved.records.length >= maxPendingEnquiries ||
         pendingByPayload.size >= maxPendingEnquiries) return {
@@ -227,7 +227,7 @@
     pendingByPayload.set(retryKey, fresh);
     const storedNew = Boolean(digest && saved.writable &&
       writePendingRecords([...saved.records, fresh]));
-    return { correlationId, stored: storedNew };
+    return { correlationId, stored: storedNew, wasPending: false };
   };
 
   const clearPending = (digest, retryKey, correlationId) => {
@@ -326,8 +326,21 @@
       const throttledBeforeInsert = !response.ok && response.status === 500 &&
         data?.code === '54000' && data.message === 'CSA_ENQUIRY_RATE_LIMITED';
       if (validationRejected || throttledBeforeInsert) {
-        definitiveRejection = throttledBeforeInsert ? 'rate_limit' : 'validation';
-        clearPending(digest, retryKey, correlationId);
+        if (validationRejected) {
+          // These exact SQL validation errors are raised before insertion.
+          definitiveRejection = 'validation';
+          clearPending(digest, retryKey, correlationId);
+        } else if (!pendingSelection.wasPending) {
+          // An initial rate-limit response cannot have inserted this freshly
+          // allocated correlation in an earlier request from this tab.
+          definitiveRejection = 'rate_limit';
+          clearPending(digest, retryKey, correlationId);
+        } else {
+          // A retry may overlap an earlier UNKNOWN request using this same
+          // correlation. The earlier request could have committed while the
+          // SQL rate-limit query was being evaluated. Preserve its identity.
+          definitiveRejection = 'uncertain_rate_limit';
+        }
         throw new Error('CSA_ENQUIRY_NOT_STORED');
       }
       const receipt = Array.isArray(data) ? data[0] : data;
@@ -345,6 +358,8 @@
         formStatus.textContent = 'CSA intake refused this enquiry before capture because of the recent-request limit. Retry later or use the separate email option.';
       } else if (definitiveRejection === 'validation') {
         formStatus.textContent = 'CSA intake rejected these details before capture. Check the form and try again, or use the email option.';
+      } else if (definitiveRejection === 'uncertain_rate_limit') {
+        formStatus.textContent = `This retry was rate-limited, but your earlier enquiry may have been received. Original reference ${correlationId} is preserved. Retry unchanged details later or ask CSA to reconcile the reference before sending a new enquiry.`;
       } else {
         formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload within 24 hours if secure session storage succeeded). Email creates a separate message.`;
       }
