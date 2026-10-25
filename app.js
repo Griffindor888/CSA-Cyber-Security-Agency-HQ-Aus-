@@ -133,10 +133,15 @@
   // Store only an opaque UUID + SHA-256 fingerprint in this tab while a request
   // may have committed. No names, emails, requirement text, or consent are stored.
   // Session storage survives reload in the same tab; it is NOT off-device custody.
+
   const pendingStorageKey = 'csa.enquiry.pending.v1';
   const retryRetentionMs = 24 * 60 * 60 * 1000;
+  const maxPendingEnquiries = 8;
   const correlationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  let pendingEnquiry = null;
+  const digestPattern = /^[0-9a-f]{64}$/;
+  // Preserve several distinct UNKNOWN submissions, never evict one silently.
+  // Only per-tab opaque references and hashes are persisted, not enquiry text.
+  const pendingByPayload = new Map();
   let submittingEnquiry = false;
 
   const digestRequest = async requestBody => {
@@ -148,32 +153,88 @@
     } catch { return null; }
   };
 
-  const readPendingCorrelation = digest => {
-    if (!digest) return null;
+  const readPendingRecords = () => {
+    let raw;
     try {
-      const saved = JSON.parse(window.sessionStorage.getItem(pendingStorageKey) || 'null');
-      const age = Date.now() - saved?.createdAt;
-      return saved?.version === 1 && saved.digest === digest &&
-        correlationPattern.test(saved.correlationId) &&
-        Number.isSafeInteger(saved.createdAt) && age >= 0 && age <= retryRetentionMs
-        ? saved.correlationId : null;
-    } catch { return null; }
+      raw = window.sessionStorage.getItem(pendingStorageKey);
+    } catch {
+      // Storage blocked: the current tab can still use memory-only recovery.
+      return { records: [], writable: false, corrupt: false };
+    }
+    if (!raw) return { records: [], writable: true, corrupt: false };
+    try {
+      const saved = JSON.parse(raw);
+      // Preserve pending correlations recorded by the previous single-entry
+      // version when upgrading to the bounded multi-entry format.
+      const records = saved?.version === 1 ? [saved]
+        : saved?.version === 2 ? saved.entries : null;
+      if (!Array.isArray(records) || records.length > maxPendingEnquiries ||
+          records.some(record =>
+            !record || !digestPattern.test(record.digest) ||
+            !correlationPattern.test(record.correlationId) ||
+            !Number.isSafeInteger(record.createdAt) ||
+            record.createdAt > Date.now() || record.createdAt < 0) ||
+          new Set(records.map(record => record.digest)).size !== records.length ||
+          new Set(records.map(record => record.correlationId)).size !== records.length) {
+        return { records: [], writable: true, corrupt: true };
+      }
+      return { records, writable: true, corrupt: false };
+    } catch {
+      // Corrupt existing UNKNOWN state must not silently mint new references.
+      return { records: [], writable: true, corrupt: true };
+    }
   };
 
-  const rememberPending = (digest, correlationId) => {
+  const writePendingRecords = records => {
+    try {
+      window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({ version: 2, entries: records }));
+      return true;
+    } catch { return false; }
+  };
+
+  const selectPendingCorrelation = (digest, retryKey) => {
+    const saved = digest ? readPendingRecords() : { records: [], writable: false, corrupt: false };
+    if (saved.corrupt) return {
+      reason: 'Saved pending references cannot be verified. Do not resubmit an uncertain enquiry; contact CSA using the email option for reconciliation.'
+    };
+    const stored = digest ? saved.records.find(record => record.digest === digest) : null;
+    const entry = stored || pendingByPayload.get(retryKey);
+    if (entry) {
+      if (Date.now() - entry.createdAt > retryRetentionMs) return {
+        reason: 'The earlier enquiry outcome remains unknown after the 24-hour automatic recovery window. Contact CSA with reference ' + entry.correlationId + ' before resubmitting.'
+      };
+      pendingByPayload.set(retryKey, entry);
+      return { correlationId: entry.correlationId, stored: Boolean(stored) };
+    }
+    if (saved.records.length >= maxPendingEnquiries ||
+        pendingByPayload.size >= maxPendingEnquiries) return {
+      reason: 'Eight enquiries are already awaiting confirmation in this tab. Reconcile an earlier reference or use the email option before creating another request.'
+    };
+    const correlationId = newCorrelationId();
+    if (!correlationId) return {
+      reason: 'A secure request reference is unavailable. Use the email option instead.'
+    };
+    const fresh = { digest, correlationId, createdAt: Date.now() };
+    pendingByPayload.set(retryKey, fresh);
+    const storedNew = Boolean(digest && saved.writable &&
+      writePendingRecords([...saved.records, fresh]));
+    return { correlationId, stored: storedNew };
+  };
+
+  const clearPending = (digest, retryKey, correlationId) => {
+    if (pendingByPayload.get(retryKey)?.correlationId === correlationId) {
+      pendingByPayload.delete(retryKey);
+    }
     if (!digest) return;
+    const saved = readPendingRecords();
+    if (!saved.writable || saved.corrupt) return;
+    const remaining = saved.records.filter(entry =>
+      !(entry.digest === digest && entry.correlationId === correlationId));
+    if (remaining.length === saved.records.length) return;
     try {
-      window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({
-        version: 1, digest, correlationId, createdAt: Date.now(),
-      }));
-    } catch { /* Private mode or storage restrictions: in-memory retry still works. */ }
-  };
-
-  const clearPending = correlationId => {
-    try {
-      const saved = JSON.parse(window.sessionStorage.getItem(pendingStorageKey) || 'null');
-      if (saved?.correlationId === correlationId) window.sessionStorage.removeItem(pendingStorageKey);
-    } catch { /* Never turn a confirmed server response into a client error. */ }
+      if (remaining.length) writePendingRecords(remaining);
+      else window.sessionStorage.removeItem(pendingStorageKey);
+    } catch { /* A valid server receipt remains authoritative. */ }
   };
   const newCorrelationId = () => {
     if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
@@ -217,20 +278,18 @@
     };
     const retryKey = JSON.stringify(requestBody);
     const digest = await digestRequest(requestBody);
-    const correlationId = (pendingEnquiry?.retryKey === retryKey && pendingEnquiry.correlationId) ||
-      readPendingCorrelation(digest) || newCorrelationId();
+    const pendingSelection = selectPendingCorrelation(digest, retryKey);
+    const correlationId = pendingSelection.correlationId;
     emailFallback(values);
     fallback.hidden = true;
     if (!correlationId) {
-      formStatus.textContent = 'A secure request reference is unavailable. Use the email option instead.';
+      formStatus.textContent = pendingSelection.reason || 'A secure request reference is unavailable. Use the email option instead.';
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
       submitButton.disabled = false;
       submittingEnquiry = false;
       return;
     }
-    pendingEnquiry = { retryKey, correlationId };
-    rememberPending(digest, correlationId);
     formStatus.textContent = 'Submitting your enquiry…';
     formStatus.dataset.state = 'pending';
     const controller = new AbortController();
@@ -254,13 +313,12 @@
         throw new Error('CSA_ENQUIRY_RECEIPT_UNCONFIRMED');
       }
 
-      pendingEnquiry = null;
-      clearPending(correlationId);
+      clearPending(digest, retryKey, correlationId);
       formStatus.textContent = `Enquiry captured. Reference: ${receipt.receipt_id}`;
       formStatus.dataset.state = 'success';
       enquiryForm.reset();
     } catch {
-      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload when secure session storage is available). Email creates a separate message.`;
+      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload within 24 hours if secure session storage succeeded). Email creates a separate message.`;
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
     } finally {
