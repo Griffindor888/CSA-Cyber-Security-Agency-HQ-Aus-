@@ -320,3 +320,45 @@ test('exact rate-limit SQLSTATE response frees slot; unrelated server errors do 
   assert.equal(page.calls[2].p_correlation_id,id);
   assert.match(page.status.textContent,/may have been received/);
 });
+
+test('rate-limited retry after an UNKNOWN preserves original correlation across reload', async () => {
+  const s=storage(); let n=0;
+  const first=browserHarness(s,async () => {
+    n++;
+    if (n === 1) throw new Error('First dispatch timed out after possible commit');
+    return {ok:false,status:500,json:async()=>({
+      code:'54000',message:'CSA_ENQUIRY_RATE_LIMITED'
+    })};
+  });
+  await first.submit();
+  const id=first.calls[0].p_correlation_id;
+  assert.equal(JSON.parse(s.getItem('csa.enquiry.pending.v1')).entries.length,1);
+  await first.submit();
+  assert.equal(first.calls[1].p_correlation_id,id);
+  assert.match(first.status.textContent,/earlier enquiry may have been received/);
+  assert.doesNotMatch(first.status.textContent,/refused this enquiry before capture/);
+  const afterRateLimit=JSON.parse(s.getItem('csa.enquiry.pending.v1'));
+  assert.equal(afterRateLimit.entries.length,1);
+  assert.equal(afterRateLimit.entries[0].correlationId,id);
+  const reloaded=browserHarness(s);
+  await reloaded.submit();
+  assert.equal(reloaded.calls[0].p_correlation_id,id);
+});
+
+test('fresh rate limit frees only its slot, preserving unrelated UNKNOWN', async () => {
+  const s=storage();
+  const page=browserHarness(s,async input => input.p_requirement === 'Independent first attempt B'
+    ? {ok:false,status:500,json:async()=>({code:'54000',message:'CSA_ENQUIRY_RATE_LIMITED'})}
+    : Promise.reject(new Error('Outcome unknown after dispatch')));
+  await page.submit();
+  const a=page.calls[0].p_correlation_id;
+  page.state.requirement='Independent first attempt B';
+  await page.submit();
+  assert.match(page.status.textContent,/refused this enquiry before capture/);
+  const saved=JSON.parse(s.getItem('csa.enquiry.pending.v1'));
+  assert.equal(saved.entries.length,1);
+  assert.equal(saved.entries[0].correlationId,a);
+  const afterReload=browserHarness(s);
+  await afterReload.submit();
+  assert.equal(afterReload.calls[0].p_correlation_id,a);
+});
