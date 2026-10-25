@@ -139,6 +139,15 @@
   const maxPendingEnquiries = 8;
   const correlationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const digestPattern = /^[0-9a-f]{64}$/;
+  // Source-pinned SQL RPC raises only these recognisable errors before INSERT.
+  // A generic 4xx/5xx, 503 or timeout is not evidence of non-persistence.
+  const rejectedBeforeInsert = new Set([
+    'CSA_ENQUIRY_CORRELATION_REQUIRED', 'CSA_ENQUIRY_REJECTED',
+    'CSA_ENQUIRY_CONSENT_REQUIRED', 'CSA_ENQUIRY_PATHWAY_INVALID',
+    'CSA_ENQUIRY_ORGANISATION_INVALID', 'CSA_ENQUIRY_CONTACT_INVALID',
+    'CSA_ENQUIRY_EMAIL_INVALID', 'CSA_ENQUIRY_TIMEFRAME_INVALID',
+    'CSA_ENQUIRY_REQUIREMENT_INVALID', 'CSA_ENQUIRY_SOURCE_INVALID',
+  ]);
   // Preserve several distinct UNKNOWN submissions, never evict one silently.
   // Only per-tab opaque references and hashes are persisted, not enquiry text.
   const pendingByPayload = new Map();
@@ -294,6 +303,7 @@
     formStatus.dataset.state = 'pending';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
+    let definitiveRejection = null;
 
     try {
       const response = await fetch(endpoint, {
@@ -307,6 +317,19 @@
       });
 
       const data = await response.json().catch(() => null);
+      // PostgREST exposes the named SQLSTATE and exact RPC exception text.
+      // Release only responses provably raised before the SQL INSERT in
+      // supabase/migrations/20260913020000_csa_commercial_intake.sql.
+      // Do not clear after network/503/unknown/out-of-contract outcomes.
+      const validationRejected = !response.ok && response.status === 400 &&
+        data?.code === '22023' && rejectedBeforeInsert.has(data.message);
+      const throttledBeforeInsert = !response.ok && response.status === 500 &&
+        data?.code === '54000' && data.message === 'CSA_ENQUIRY_RATE_LIMITED';
+      if (validationRejected || throttledBeforeInsert) {
+        definitiveRejection = throttledBeforeInsert ? 'rate_limit' : 'validation';
+        clearPending(digest, retryKey, correlationId);
+        throw new Error('CSA_ENQUIRY_NOT_STORED');
+      }
       const receipt = Array.isArray(data) ? data[0] : data;
       if (!response.ok || !correlationPattern.test(receipt?.receipt_id) ||
           receipt.correlation_id !== correlationId || receipt.pathway !== requestBody.p_pathway) {
@@ -318,7 +341,13 @@
       formStatus.dataset.state = 'success';
       enquiryForm.reset();
     } catch {
-      formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload within 24 hours if secure session storage succeeded). Email creates a separate message.`;
+      if (definitiveRejection === 'rate_limit') {
+        formStatus.textContent = 'CSA intake refused this enquiry before capture because of the recent-request limit. Retry later or use the separate email option.';
+      } else if (definitiveRejection === 'validation') {
+        formStatus.textContent = 'CSA intake rejected these details before capture. Check the form and try again, or use the email option.';
+      } else {
+        formStatus.textContent = `Your enquiry was not confirmed and may have been received. No false success has been recorded. Retrying unchanged details in this tab reuses request reference ${correlationId} (including after reload within 24 hours if secure session storage succeeded). Email creates a separate message.`;
+      }
       formStatus.dataset.state = 'error';
       fallback.hidden = false;
     } finally {

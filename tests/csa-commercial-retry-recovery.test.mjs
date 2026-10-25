@@ -242,3 +242,81 @@ test('legacy single pending record upgrades without discarding its reference', a
   assert.equal(upgraded.entries.length,2);
   assert.equal(upgraded.entries[0].correlationId,record.correlationId);
 });
+
+
+test('eight authoritative validation rejections release capacity for a corrected enquiry', async () => {
+  const s=storage();
+  let calls=0;
+  const page=browserHarness(s,async () => {
+    calls++;
+    if (calls <= 8) return {ok:false,status:400,json:async()=>({
+      code:'22023',message:'CSA_ENQUIRY_EMAIL_INVALID'
+    })};
+    return {ok:true,status:200,json:async()=>({
+      receipt_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      correlation_id:page.calls.at(-1).p_correlation_id,
+      pathway:page.calls.at(-1).p_pathway
+    })};
+  });
+  for (let i=0;i<8;i++) {
+    page.state.email='invalid'+i+'@intranet';
+    await page.submit();
+    assert.equal(page.status.dataset.state,'error');
+    assert.match(page.status.textContent,/rejected.*before capture/);
+  }
+  assert.equal(s.count(),0);
+  page.state.email='corrected@example.invalid';
+  await page.submit();
+  assert.equal(page.calls.length,9);
+  assert.equal(page.status.dataset.state,'success');
+  assert.equal(s.count(),0);
+});
+
+test('definitive B rejection removes only B, not uncertain A', async () => {
+  const s=storage(); let n=0;
+  const first=browserHarness(s,async()=>{
+    n++;
+    if(n===1) throw new Error('Timeout after dispatch');
+    return {ok:false,status:400,json:async()=>({code:'22023',message:'CSA_ENQUIRY_REQUIREMENT_INVALID'})};
+  });
+  await first.submit(); const a=first.calls[0];
+  first.state.requirement='A different rejected request B';
+  await first.submit();
+  assert.equal(first.calls.length,2);
+  const entries=JSON.parse(s.getItem('csa.enquiry.pending.v1')).entries;
+  assert.equal(entries.length,1);
+  assert.equal(entries[0].correlationId,a.p_correlation_id);
+  const reload=browserHarness(s); await reload.submit();
+  assert.equal(reload.calls[0].p_correlation_id,a.p_correlation_id);
+});
+
+test('untrusted 503 with error-like JSON still retains UNKNOWN correlation', async () => {
+  const s=storage();
+  const page=browserHarness(s,async()=>({ok:false,status:503,json:async()=>({
+    code:'22023',message:'CSA_ENQUIRY_EMAIL_INVALID'
+  })}));
+  await page.submit(); const id=page.calls[0].p_correlation_id;
+  assert.match(page.status.textContent,/may have been received/);
+  await page.submit();
+  assert.equal(page.calls[1].p_correlation_id,id);
+  assert.equal(JSON.parse(s.getItem('csa.enquiry.pending.v1')).entries.length,1);
+});
+
+test('exact rate-limit SQLSTATE response frees slot; unrelated server errors do not', async () => {
+  const s=storage(); let n=0;
+  const page=browserHarness(s,async()=>{
+    n++;
+    return n===1
+      ? {ok:false,status:500,json:async()=>({code:'54000',message:'CSA_ENQUIRY_RATE_LIMITED'})}
+      : {ok:false,status:500,json:async()=>({code:'XX000',message:'unknown internal failure'})};
+  });
+  await page.submit();
+  assert.equal(s.count(),0);
+  assert.match(page.status.textContent,/recent-request limit/);
+  await page.submit();
+  assert.equal(s.count(),1);
+  const id=page.calls[1].p_correlation_id;
+  await page.submit();
+  assert.equal(page.calls[2].p_correlation_id,id);
+  assert.match(page.status.textContent,/may have been received/);
+});
