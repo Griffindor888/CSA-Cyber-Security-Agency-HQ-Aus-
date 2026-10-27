@@ -213,6 +213,11 @@
         reason: 'The earlier enquiry outcome remains unknown after the 24-hour automatic recovery window. Contact CSA with reference ' + entry.correlationId + ' before resubmitting.'
       };
       pendingByPayload.set(retryKey, entry);
+      if (!stored && digest && saved.writable &&
+          saved.records.length < maxPendingEnquiries &&
+          !saved.records.some(record => record.correlationId === entry.correlationId)) {
+        writePendingRecords([...saved.records, entry]);
+      }
       return { correlationId: entry.correlationId, stored: Boolean(stored), wasPending: true };
     }
     if (saved.records.length >= maxPendingEnquiries ||

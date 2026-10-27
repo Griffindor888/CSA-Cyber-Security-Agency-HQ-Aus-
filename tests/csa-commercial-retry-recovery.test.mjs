@@ -141,6 +141,36 @@ test('storage restrictions fail soft, and same-page retry still reuses the key',
   assert.equal(page.status.dataset.state,'error');
 });
 
+test('a memory-only retry is persisted with its original identity when storage recovers', async () => {
+  const rows = new Map();
+  let writable = false;
+  const recoveredStorage = {
+    getItem(key) { return rows.get(key) ?? null; },
+    setItem(key, value) {
+      if (!writable) throw new Error('Storage write denied');
+      rows.set(key, String(value));
+    },
+    removeItem(key) { rows.delete(key); },
+  };
+  const page = browserHarness(recoveredStorage);
+  await page.submit();
+  const id = page.calls[0].p_correlation_id;
+  assert.equal(rows.size, 0);
+
+  writable = true;
+  await page.submit();
+  assert.equal(page.calls[1].p_correlation_id, id);
+  const saved = JSON.parse(rows.get('csa.enquiry.pending.v1'));
+  assert.equal(saved.entries.length, 1);
+  assert.equal(saved.entries[0].correlationId, id);
+  const createdAt = saved.entries[0].createdAt;
+
+  const reloaded = browserHarness(recoveredStorage);
+  await reloaded.submit();
+  assert.equal(reloaded.calls[0].p_correlation_id, id);
+  assert.equal(JSON.parse(rows.get('csa.enquiry.pending.v1')).entries[0].createdAt, createdAt);
+});
+
 test('two near-simultaneous submits cannot mint two IDs during digest resolution', async () => {
   const page=browserHarness(storage());
   const first=page.submit();
