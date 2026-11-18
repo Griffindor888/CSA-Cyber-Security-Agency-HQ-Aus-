@@ -23,7 +23,7 @@ function storage() {
     count() { return rows.size; },
   };
 }
-function browserHarness(tabStorage, send = async () => { throw new Error('Timeout after dispatch'); }) {
+function browserHarness(tabStorage, send = async () => { throw new Error('Timeout after dispatch'); }, cryptoProvider = webcrypto, clock = Date) {
   const state = fields();
   const calls = [];
   const submitButton = {disabled:false};
@@ -60,7 +60,7 @@ function browserHarness(tabStorage, send = async () => { throw new Error('Timeou
     entries() { return Object.entries({...state, pathway:pathwaySelect.value}); }
   }
   const context=vm.createContext({
-    document,window:browser,crypto:webcrypto,TextEncoder,FormData:FakeFormData,
+    document,window:browser,crypto:cryptoProvider,TextEncoder,FormData:FakeFormData,Date:clock,
     URLSearchParams,AbortController,setTimeout,clearTimeout,
     fetch: async (url,opts) => {
       assert.match(url,/submit_csa_commercial_enquiry$/);
@@ -169,6 +169,44 @@ test('a memory-only retry is persisted with its original identity when storage r
   await reloaded.submit();
   assert.equal(reloaded.calls[0].p_correlation_id, id);
   assert.equal(JSON.parse(rows.get('csa.enquiry.pending.v1')).entries[0].createdAt, createdAt);
+});
+
+test('a later successful digest repairs a memory-only entry without changing its identity or age', async () => {
+  const rows = new Map();
+  let now = 1000;
+  let digestAvailable = false;
+  const retryCrypto = {
+    randomUUID: () => webcrypto.randomUUID(),
+    subtle: {
+      digest(...args) {
+        if (!digestAvailable) throw new Error('Digest unavailable');
+        return webcrypto.subtle.digest(...args);
+      },
+    },
+  };
+  const s = {
+    getItem(key) { return rows.get(key) ?? null; },
+    setItem(key, value) { rows.set(key, String(value)); },
+    removeItem(key) { rows.delete(key); },
+  };
+  const page = browserHarness(s, undefined, retryCrypto, {now: () => now});
+  await page.submit();
+  const id = page.calls[0].p_correlation_id;
+  assert.equal(rows.size, 0);
+
+  now = 2000;
+  digestAvailable = true;
+  await page.submit();
+  assert.equal(page.calls[1].p_correlation_id, id);
+  const saved = JSON.parse(rows.get('csa.enquiry.pending.v1'));
+  assert.equal(saved.entries.length, 1);
+  assert.equal(saved.entries[0].correlationId, id);
+  assert.match(saved.entries[0].digest, /^[0-9a-f]{64}$/);
+  assert.equal(saved.entries[0].createdAt, 1000);
+
+  const reloaded = browserHarness(s, undefined, webcrypto, {now: () => now});
+  await reloaded.submit();
+  assert.equal(reloaded.calls[0].p_correlation_id, id);
 });
 
 test('two near-simultaneous submits cannot mint two IDs during digest resolution', async () => {

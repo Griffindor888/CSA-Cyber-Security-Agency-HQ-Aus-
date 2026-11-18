@@ -212,13 +212,14 @@
       if (Date.now() - entry.createdAt > retryRetentionMs) return {
         reason: 'The earlier enquiry outcome remains unknown after the 24-hour automatic recovery window. Contact CSA with reference ' + entry.correlationId + ' before resubmitting.'
       };
-      pendingByPayload.set(retryKey, entry);
+      const recovered = !entry.digest && digest ? { ...entry, digest } : entry;
+      pendingByPayload.set(retryKey, recovered);
       if (!stored && digest && saved.writable &&
           saved.records.length < maxPendingEnquiries &&
-          !saved.records.some(record => record.correlationId === entry.correlationId)) {
-        writePendingRecords([...saved.records, entry]);
+          !saved.records.some(record => record.correlationId === recovered.correlationId)) {
+        writePendingRecords([...saved.records, recovered]);
       }
-      return { correlationId: entry.correlationId, stored: Boolean(stored), wasPending: true };
+      return { correlationId: recovered.correlationId, stored: Boolean(stored), wasPending: true };
     }
     if (saved.records.length >= maxPendingEnquiries ||
         pendingByPayload.size >= maxPendingEnquiries) return {
