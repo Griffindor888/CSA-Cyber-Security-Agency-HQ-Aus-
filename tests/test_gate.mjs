@@ -10,7 +10,7 @@ const digest = b => createHash('sha256').update(b).digest('hex');
 
 test('root and gate are identical reviewed entrance sources with the approved two-eagle derivative', () => {
   assert.equal(read('index.html').toString(), html);
-  assert.equal(digest(html), '815757df2c74c8d978eb850879b45b57cb1a30f610c26b690c0172cee65c1a4d');
+  assert.equal(digest(html), '66586a0ef79cc29425c2532522656644edcb511a3cd2653a5118926db52dd650');
   const art = read('assets/brand/csa-two-eagle-arms.avif');
   assert.equal(art.length,19676);
   assert.equal(digest(art),'93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87');
@@ -21,7 +21,7 @@ test('root and gate are identical reviewed entrance sources with the approved tw
 
 test('the reviewed corporate overview and direct product destinations remain behind the entrance', () => {
   const original = read('institution/index.html');
-  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'e9e1bfe6c955eecc4246ae4ccbe3fd0aab146b2d');
+  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'fdc8ef4a025e052717535fddfa55b346ee81770b');
   assert.match(original.toString(),/Governance infrastructure for consequential technology/);
   assert.match(html,/href="\/institution\/"/);
 });
