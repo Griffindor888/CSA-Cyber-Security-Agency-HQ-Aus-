@@ -14,7 +14,7 @@ test('published content does not direct Australian customers to unrelated Soluri
 test('shared product directories identify the Australian Solurius overview accurately', () => {
   for (const path of PUBLIC_FILES.filter(path => path.endsWith('.html'))) {
     const html = read(path);
-    if (!html.includes('class="product-websites"')) continue;
+    assert.ok(html.includes('class="product-websites"'), `${path}: missing shared product directory`);
     assert.match(html, /<a href="\/platforms\/solurius\/">Solurius overview →<\/a>/, path);
     assert.doesNotMatch(html, /Solurius website/, path);
   }
