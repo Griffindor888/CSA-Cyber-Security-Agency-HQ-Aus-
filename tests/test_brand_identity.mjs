@@ -87,5 +87,9 @@ test('canonical navigation and security boundaries are preserved', () => {
   assert.ok(PUBLIC_FILES.every(p => !/^(?:docs|agent|supabase|tests|scripts)\//.test(p) && !p.includes('*')));
   const csp = config.headers.find(h => h.source === '/(.*)').headers.find(h => h.key === 'Content-Security-Policy').value;
   assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
-  assert.match(csp, /script-src 'self'; style-src 'self'/);
+  assert.match(csp, /script-src 'self'/);
+  assert.match(csp, /style-src 'self'/);
+  // Vercel Speed Insights integration
+  assert.match(csp, /https:\/\/\*\.vercel-scripts\.com/);
+  assert.match(csp, /https:\/\/\*\.vercel-insights\.com/);
 });
