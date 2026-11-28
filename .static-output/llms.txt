@@ -1,0 +1,44 @@
+# Cyber Security Agency Australia — CSA
+
+Canonical site: https://cs-agency.com.au/
+Legal entity: Cyber Security Agency Australia Pty Ltd
+ABN: 89 659 238 570
+ACN: 659 238 570
+Contact: info@cs-agency.com.au
+Head Office: Brisbane, Queensland, Australia (street address not published)
+North America Office: 30 Wall Street, 8th Floor, New York, NY 10005, United States
+Operating presence: Australia and United States
+Market orientation: Global
+
+## Institutional scope
+CSA is an Australian-founded technology institution developing connected systems for governed AI, human assurance, intelligent operations and cyber-risk readiness.
+
+## Ecosystem
+- WARDALE OS — governed work, identity, authority, execution and evidence infrastructure.
+- Solurius — human assurance and workforce intelligence.
+- AUTTO Connect — intelligent automotive operating venture.
+- Cyber Security Insurance Australia (CSiA) — cyber-risk readiness and partner-dependent insurance pathway.
+- CSA Governance — institutional governance and implementation intellectual property.
+
+## Public information architecture
+/company/
+/ecosystem/
+/technology/
+/governance/
+/industries/
+/trust/
+/research/
+/knowledge/
+/engagement/
+/contact/
+/start/
+/security/
+/privacy/
+/terms/
+/accessibility/
+
+## Intellectual-property boundary
+The public website provides selected abstracts, research, standards summaries and methodology. Proprietary governance volumes, templates, implementation frameworks, enterprise playbooks, certification instruments and audit methodology are controlled materials and are not publicly reproduced.
+
+## Claims discipline
+Platform, certification, partnership and operational-status claims are evidence-scoped. External technology providers are not represented as endorsing or partnering with CSA unless formally established.

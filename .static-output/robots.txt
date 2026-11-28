@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Disallow: /library/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /library/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /library/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /library/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /library/
+
+Sitemap: https://cs-agency.com.au/sitemap.xml

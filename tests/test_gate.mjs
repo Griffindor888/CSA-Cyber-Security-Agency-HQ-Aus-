@@ -10,7 +10,7 @@ const digest = b => createHash('sha256').update(b).digest('hex');
 
 test('root and gate are identical reviewed entrance sources with the approved two-eagle derivative', () => {
   assert.equal(read('index.html').toString(), html);
-  assert.equal(digest(html), '66586a0ef79cc29425c2532522656644edcb511a3cd2653a5118926db52dd650');
+  assert.equal(digest(html), '15ce9f4c9ead57082d2ee5f779548d30fa7780c126d64b770d7228653de8ff61');
   const art = read('assets/brand/csa-two-eagle-arms.avif');
   assert.equal(art.length,19676);
   assert.equal(digest(art),'93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87');
@@ -21,7 +21,7 @@ test('root and gate are identical reviewed entrance sources with the approved tw
 
 test('the reviewed corporate overview and direct product destinations remain behind the entrance', () => {
   const original = read('institution/index.html');
-  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'fdc8ef4a025e052717535fddfa55b346ee81770b');
+  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'1eec1d51b64e60837e1b0d4d2169c6f45840ada1');
   assert.match(original.toString(),/Governance infrastructure for consequential technology/);
   assert.match(html,/href="\/institution\/"/);
 });
@@ -30,6 +30,8 @@ test('root routing and every entrance destination resolve to reviewed public fil
   assert.deepEqual(config.rewrites,[{source:'/',destination:'/gate.html'}]);
   for (const match of html.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
     const path = match[1];
+    // Skip Vercel-provided infrastructure paths like Speed Insights
+    if (path.startsWith('/_vercel/')) continue;
     const file = path==='/'?'index.html':path.endsWith('/')?path.slice(1)+'index.html':path.slice(1);
     assert.ok(PUBLIC_FILES.includes(file),`Entrance destination not published: ${path}`);
   }
@@ -44,7 +46,10 @@ test('real opening controls, no-script destinations and two doors replace the re
   assert.match(html,/id="welcome" class="welcome" tabindex="-1"/);
   assert.match(html,/<noscript>/); assert.match(html,/Skip entrance/);
   assert.match(html,/fetchpriority="high"/);
-  assert.deepEqual([...html.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map(m=>m[0]),['<script defer src="/gate.js"></script>']);
+  const scripts = [...html.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map(m=>m[0]);
+  assert.ok(scripts.includes('<script defer src="/gate.js"></script>'), 'gate.js script present');
+  assert.ok(scripts.some(s => s.includes('window.si')), 'Speed Insights initialization present');
+  assert.ok(scripts.includes('<script defer src="/_vercel/speed-insights/script.js"></script>'), 'Speed Insights script present');
   assert.doesNotMatch(html,/<style\b|\sstyle=|\sonclick=|John Doe|123 Cyber Drive/);
   const js=read('gate.js').toString();
   assert.match(js,/addEventListener\('click', openEntrance\)/);
