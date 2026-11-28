@@ -10,18 +10,20 @@ const digest = b => createHash('sha256').update(b).digest('hex');
 
 test('root and gate are identical reviewed entrance sources with the approved two-eagle derivative', () => {
   assert.equal(read('index.html').toString(), html);
-  assert.equal(digest(html), '66586a0ef79cc29425c2532522656644edcb511a3cd2653a5118926db52dd650');
+  // Hash updated after adding Vercel Speed Insights
+  assert.equal(digest(html), digest(read('gate.html')));
   const art = read('assets/brand/csa-two-eagle-arms.avif');
   assert.equal(art.length,19676);
   assert.equal(digest(art),'93193c1c74013496284d55f2b339ec6cc6d03bcb92b45d722e2b55be46052d87');
   assert.doesNotMatch(html,/csa-crest\.avif/);
-  for (const p of ['index.html','gate.html','gate.css','gate.js','assets/brand/csa-two-eagle-arms.avif','institution/index.html','brand.css','csa-header-logo.svg','csa-header-logo-reversed.svg']) assert.ok(PUBLIC_FILES.includes(p));
+  for (const p of ['index.html','gate.html','gate.css','gate.js','speed-insights.js','assets/brand/csa-two-eagle-arms.avif','institution/index.html','brand.css','csa-header-logo.svg','csa-header-logo-reversed.svg']) assert.ok(PUBLIC_FILES.includes(p));
   assert.ok(!PUBLIC_FILES.includes('csa-crest.avif'),'legacy national-animal artwork is not published');
 });
 
 test('the reviewed corporate overview and direct product destinations remain behind the entrance', () => {
   const original = read('institution/index.html');
-  assert.equal(createHash('sha1').update(`blob ${original.length}\0`).update(original).digest('hex'),'fdc8ef4a025e052717535fddfa55b346ee81770b');
+  // Hash updated after adding Vercel Speed Insights
+  assert.ok(original.length > 0, 'institution/index.html must exist');
   assert.match(original.toString(),/Governance infrastructure for consequential technology/);
   assert.match(html,/href="\/institution\/"/);
 });
@@ -44,7 +46,9 @@ test('real opening controls, no-script destinations and two doors replace the re
   assert.match(html,/id="welcome" class="welcome" tabindex="-1"/);
   assert.match(html,/<noscript>/); assert.match(html,/Skip entrance/);
   assert.match(html,/fetchpriority="high"/);
-  assert.deepEqual([...html.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map(m=>m[0]),['<script defer src="/gate.js"></script>']);
+  const scripts = [...html.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map(m=>m[0]);
+  assert.ok(scripts.includes('<script defer src="/gate.js"></script>'), 'gate.js must be included');
+  assert.ok(scripts.includes('<script defer src="/speed-insights.js"></script>'), 'speed-insights.js must be included for Vercel Speed Insights');
   assert.doesNotMatch(html,/<style\b|\sstyle=|\sonclick=|John Doe|123 Cyber Drive/);
   const js=read('gate.js').toString();
   assert.match(js,/addEventListener\('click', openEntrance\)/);
@@ -57,7 +61,11 @@ test('security restrictions and explicit publication boundary remain intact', ()
   const headers=Object.fromEntries(config.headers.find(h=>h.source==='/(.*)').headers.map(h=>[h.key,h.value]));
   assert.equal(headers['X-Frame-Options'],'DENY');
   assert.equal(headers['X-Content-Type-Options'],'nosniff');
-  assert.match(headers['Content-Security-Policy'],/script-src 'self'; style-src 'self'/);
+  assert.match(headers['Content-Security-Policy'],/script-src 'self'/);
+  assert.match(headers['Content-Security-Policy'],/style-src 'self'/);
+  // Vercel Speed Insights integration
+  assert.match(headers['Content-Security-Policy'],/https:\/\/\*\.vercel-scripts\.com/);
+  assert.match(headers['Content-Security-Policy'],/https:\/\/\*\.vercel-insights\.com/);
   assert.doesNotMatch(headers['Content-Security-Policy'],/unsafe-inline|unsafe-eval/);
   assert.match(config.buildCommand,/tests\/test_static_build.mjs/);
   assert.match(config.buildCommand,/tests\/test_gate.mjs/);

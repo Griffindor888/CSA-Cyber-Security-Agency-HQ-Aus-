@@ -1,0 +1,29 @@
+{
+  "name": "primary",
+  "version": "1.0.0",
+  "description": "Canonical website: https://cs-agency.com.au",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^2.1.1",
+    "playwright": "^1.55.0",
+    "playwright-core": "^1.55.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Griffindor888/CSA-Cyber-Security-Agency-HQ-Aus-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Griffindor888/CSA-Cyber-Security-Agency-HQ-Aus-/issues"
+  },
+  "homepage": "https://github.com/Griffindor888/CSA-Cyber-Security-Agency-HQ-Aus-#readme"
+}
